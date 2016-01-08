@@ -13,8 +13,10 @@ Run a command to the git repository all in the current directory.
 $ go get github.com/takecy/git-sync
 ```
 ##### via Binary  
-[Download](https://github.com/takecy/git-sync/releases)
+[Download](https://github.com/takecy/git-sync/releases)  
+and copy to your `$PATH`.
 
+<br/>
 Print help.
 ```
 $ git-sync
