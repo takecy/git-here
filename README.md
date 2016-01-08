@@ -36,16 +36,21 @@ Options:
 ```shell
 $ tree
 .
-├── .Hoge
-├── repo_a
-├── repo_b
-└── repo_c
+├── .Hoge        // ignore
+├── repo_a       // target
+├── dir
+│   └── repo_b   // ignore
+└── repo_c       // target
 ```
 
-It will be performed on the repo_a, repo_b, and repo_c.  
+It will be performed on the repo_a, and repo_c.  
 ```shell
 $ git-sync fetch --all -p
 ```
+```shell
+$ git-sync pull
+```
 
+<br/>
 ## License
 MIT
