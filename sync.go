@@ -4,10 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/takecy/git-sync/cli"
 )
+
+const version = "0.2.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
@@ -17,18 +18,19 @@ Usage:
   git-sync <command> [options]
 
 Commands:
+  version Print version.
   fetch   Alias for <git fetch>.
   pull    Alias for <git pull>.
 
 Options:
   same of git.
-
 `
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	flag.Usage = usageAndExit
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "%s\n", usage)
+		os.Exit(1)
+	}
 	flag.Parse()
 
 	if flag.NArg() == 0 {
@@ -36,18 +38,11 @@ func main() {
 		return
 	}
 
-	run(flag.Arg(0))
-}
-
-func run(cmd string) {
-	dirs, err := cli.ListDirs()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
-	}
-
 	var f func(...string) error
-	switch cmd {
+	switch flag.Arg(0) {
+	case "version":
+		fmt.Fprintf(os.Stdout, "git-sync %s\n", version)
+		return
 	case "fetch":
 		f = cli.Fetch
 	case "pull":
@@ -56,24 +51,8 @@ func run(cmd string) {
 		flag.Usage()
 	}
 
-	for _, d := range dirs {
-		os.Chdir(d)
-		cd, _ := os.Getwd()
-		fmt.Fprintf(os.Stdout, "exec.dir:%v\n", cd)
-
-		err = f(flag.Args()[1:]...)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-		} else {
-			fmt.Fprint(os.Stdout, "done\n\n")
-		}
-
-		os.Chdir("../")
-	}
-
-}
-
-func usageAndExit() {
-	fmt.Fprintf(os.Stderr, "%s\n", usage)
-	os.Exit(1)
+	(&cli.Cmd{
+		Args: flag.Args()[1:],
+		Fn:   f,
+	}).Run()
 }
