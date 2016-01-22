@@ -28,7 +28,7 @@ Commands:
   pull    Alias for <git pull>.
 
 Options:
-  same of git.
+  Same as git.
 ```
 
 <br/>

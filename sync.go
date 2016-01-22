@@ -18,12 +18,12 @@ Usage:
   git-sync <command> [options]
 
 Commands:
-  version Print version.
-  fetch   Alias for <git fetch>.
-  pull    Alias for <git pull>.
+  version  Print version.
+  fetch    Alias for <git fetch>.
+  pull     Alias for <git pull>.
 
 Options:
-  same of git.
+  Same as git.
 `
 
 func main() {
