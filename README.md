@@ -1,10 +1,11 @@
 # git-sync
 
-![](https://img.shields.io/badge/golang-1.5.2-blue.svg?style=flat)
-[![GoDoc](https://godoc.org/github.com/takecy/git-sync?status.svg)](https://godoc.org/github.com/takecy/git-sync)
+![](https://img.shields.io/badge/golang-1.5.2+-blue.svg?style=flat-square)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-sync)
+
 
 git-sync is `git fetch` or `git pull` alias.  
-Run a command to the git repository all in the current directory.
+Run a command to the git repositories in the current directory.
 
 <br/>
 ### Usage
@@ -14,7 +15,7 @@ $ go get github.com/takecy/git-sync
 ```
 ##### via Binary  
 [Download](https://github.com/takecy/git-sync/releases)  
-and copy to your `$PATH`.
+and copy binary to your `$PATH`.
 
 <br/>
 Print help.
