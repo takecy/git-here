@@ -6,12 +6,14 @@ import (
 	"os/exec"
 )
 
+// IsExist is check git command
 func IsExist() error {
 	s, err := exec.LookPath("git")
 	fmt.Fprintf(os.Stdout, "%s", s)
 	return err
 }
 
+// Fetch is git fetch
 func Fetch(args ...string) error {
 	cmdArgs := append([]string{"fetch"}, args...)
 	c := exec.Command("git", cmdArgs...)
@@ -22,6 +24,7 @@ func Fetch(args ...string) error {
 	return c.Run()
 }
 
+// Pull is git pull
 func Pull(args ...string) error {
 	cmdArgs := append([]string{"pull"}, args...)
 	c := exec.Command("git", cmdArgs...)
