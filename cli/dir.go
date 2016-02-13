@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ListDirs is list directories
 func ListDirs() (dirs []string, err error) {
 	files, err := ioutil.ReadDir("./")
 	if err != nil {
@@ -21,6 +22,7 @@ func ListDirs() (dirs []string, err error) {
 	return
 }
 
+// IsRepo is check the directory whether git repository
 func IsRepo(dirName string) bool {
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
