@@ -8,26 +8,25 @@ import (
 	"github.com/takecy/git-sync/cli"
 )
 
-const version = "0.3.0"
+const version = "0.4.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
 more info:   https://github.com/takecy/git-sync#readme
 
 Usage:
-  git-sync <command> [options]
-
-Commands:
-  version  Print version.
-  fetch    Alias for <git fetch>.
-  pull     Alias for <git pull>.
-
-Options:
-  Same as git.
+  git-sync [original_options] <git_command> [git_options]
 
 Original Options:
   --target-dir  Specific target directory with regex.
   --ignore-dir  Specific ignore directory with regex.
+
+Commands:
+  version     Print version.
+  <command>   Same as git command. (fetch, pull, status...)
+
+Options:
+  Same as git.
 `
 
 var (
@@ -47,23 +46,15 @@ func main() {
 		return
 	}
 
-	var f func(...string) error
-	switch flag.Arg(0) {
-	case "version":
+	if flag.Arg(0) == "version" {
 		fmt.Fprintf(os.Stdout, "git-sync %s\n", version)
 		return
-	case "fetch":
-		f = cli.Fetch
-	case "pull":
-		f = cli.Pull
-	default:
-		flag.Usage()
 	}
 
 	(&cli.Cmd{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
-		Args:      flag.Args()[1:],
-		Fn:        f,
+		Command:   flag.Arg(0),
+		Options:   flag.Args()[1:],
 	}).Run()
 }

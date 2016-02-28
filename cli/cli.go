@@ -14,11 +14,11 @@ type Cmd struct {
 	// ignore sync target directory
 	IgnoreDir string
 
-	// git command args
-	Args []string
-
 	// git command
-	Fn func(...string) error
+	Command   string
+
+	// git command args
+	Options   []string
 }
 
 // Run is run command
@@ -32,6 +32,8 @@ func (s *Cmd) Run() {
 		fmt.Fprintf(os.Stderr, "%s\n", "There is no repositories...")
 		os.Exit(1)
 	}
+
+	fmt.Fprintf(os.Stdout, "exec.git.command: %s %v\n\n", s.Command, s.Options)
 
 	for _, d := range dirs {
 		if s.IgnoreDir != "" {
@@ -50,7 +52,7 @@ func (s *Cmd) Run() {
 		cd, _ := os.Getwd()
 		fmt.Fprintf(os.Stdout, "exec.dir:%v\n", cd)
 
-		err = s.Fn(s.Args...)
+		err = Git(s.Command, s.Options...)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			fmt.Fprint(os.Stdout, "error.\n\n")
