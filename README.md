@@ -25,17 +25,16 @@ $ git-sync
 Usage:
   git-sync [original_options] <git_command> [git_options]
 
-Commands:
-  version  Print version.
-  fetch    Alias for <git fetch>.
-  pull     Alias for <git pull>.
-
-Options:
-  Same as git.
-
 Original Options:
   --target-dir  Specific target directory with regex.
   --ignore-dir  Specific ignore directory with regex.
+
+Commands:
+  version     Print version.
+  <command>   Same as git command. (fetch, pull, status...)
+
+Options:
+  Same as git.
 ```
 ##### Default target directories
 ```shell
