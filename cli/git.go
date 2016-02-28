@@ -13,20 +13,9 @@ func IsExist() error {
 	return err
 }
 
-// Fetch is git fetch
-func Fetch(args ...string) error {
-	cmdArgs := append([]string{"fetch"}, args...)
-	c := exec.Command("git", cmdArgs...)
-	c.Stdin = os.Stdin
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-
-	return c.Run()
-}
-
-// Pull is git pull
-func Pull(args ...string) error {
-	cmdArgs := append([]string{"pull"}, args...)
+// Git is execute git command
+func Git(command string, args ...string) error {
+	cmdArgs := append([]string{command}, args...)
 	c := exec.Command("git", cmdArgs...)
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
