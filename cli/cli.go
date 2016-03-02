@@ -15,10 +15,10 @@ type Cmd struct {
 	IgnoreDir string
 
 	// git command
-	Command   string
+	Command string
 
 	// git command args
-	Options   []string
+	Options []string
 }
 
 // Run is run command
