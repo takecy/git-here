@@ -26,8 +26,8 @@ Usage:
   git-sync [original_options] <git_command> [git_options]
 
 Original Options:
-  --target-dir  Specific target directory with regex.
-  --ignore-dir  Specific ignore directory with regex.
+  --target  Specific target directory with regex.
+  --ignore  Specific ignore directory with regex.
 
 Commands:
   version     Print version.

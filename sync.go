@@ -8,7 +8,7 @@ import (
 	"github.com/takecy/git-sync/cli"
 )
 
-const version = "0.4.0"
+const version = "0.5.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
@@ -18,8 +18,8 @@ Usage:
   git-sync [original_options] <git_command> [git_options]
 
 Original Options:
-  --target-dir  Specific target directory with regex.
-  --ignore-dir  Specific ignore directory with regex.
+  --target  Specific target directory with regex.
+  --ignore  Specific ignore directory with regex.
 
 Commands:
   version     Print version.
@@ -30,8 +30,8 @@ Options:
 `
 
 var (
-	targetDir = flag.String("target-dir", "", "")
-	ignoreDir = flag.String("ignore-dir", "", "")
+	targetDir = flag.String("target", "", "")
+	ignoreDir = flag.String("ignore", "", "")
 )
 
 func main() {
