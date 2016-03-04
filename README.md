@@ -53,10 +53,10 @@ $ tree
 $ git-sync fetch --all -p
 ```
 ```shell
-$ git-sync --target-dir ^cool-tool pull
+$ git-sync --target ^cool-tool pull
 ```
 ```shell
-$ git-sync --target-dir ^cool-tool --ignore-dir ^wip-command pull
+$ git-sync --target ^cool-tool --ignore ^wip-command pull
 ```
 
 <br/>
