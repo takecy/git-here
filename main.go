@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/takecy/git-sync/cli"
+	"github.com/takecy/git-sync/syncer"
 )
 
-const version = "0.5.0"
+const version = "0.6.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
@@ -18,8 +18,10 @@ Usage:
   git-sync [original_options] <git_command> [git_options]
 
 Original Options:
-  --target  Specific target directory with regex.
-  --ignore  Specific ignore directory with regex.
+  --target   Specific target directory with regex.
+  --ignore   Specific ignore directory with regex.
+	--timeout  Specific timeout of performed commnad during on one directory.
+	           5s, 10m...
 
 Commands:
   version     Print version.
@@ -32,6 +34,7 @@ Options:
 var (
 	targetDir = flag.String("target", "", "")
 	ignoreDir = flag.String("ignore", "", "")
+	timeout   = flag.String("timeout", "5s", "")
 )
 
 func main() {
@@ -51,9 +54,10 @@ func main() {
 		return
 	}
 
-	(&cli.Cmd{
+	(&syncer.Cmd{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
+		TimeOunt:  *timeout,
 		Command:   flag.Arg(0),
 		Options:   flag.Args()[1:],
 	}).Run()

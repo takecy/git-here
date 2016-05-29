@@ -1,0 +1,14 @@
+{
+	"ImportPath": "github.com/takecy/git-sync",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v72",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
+		}
+	]
+}
