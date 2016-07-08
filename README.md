@@ -13,21 +13,24 @@ git-sync is Run a command to all git repositories in the current directory.
 ### Usage
 ##### via Go
 ```shell
-$ go get github.com/takecy/git-sync
+$ go get github.com/takecy/git-sync/gs
 ```
 ##### via Binary  
 [Download](https://github.com/takecy/git-sync/releases) for your environment.  
 and copy binary to your `$PATH`.
 
-##### Print help
+##### Print usage
 ```
-$ git-sync
+$ gs
+
 Usage:
-  git-sync [original_options] <git_command> [git_options]
+  gs [original_options] <git_command> [git_options]
 
 Original Options:
-  --target  Specific target directory with regex.
-  --ignore  Specific ignore directory with regex.
+  --target   Specific target directory with regex.
+  --ignore   Specific ignore directory with regex.
+  --timeout  Specific timeout of performed commnad during on one directory.
+             5s, 10m...
 
 Commands:
   version     Print version.
@@ -36,6 +39,7 @@ Commands:
 Options:
   Same as git.
 ```
+
 ##### Default target directories
 ```shell
 $ tree
@@ -50,13 +54,21 @@ $ tree
 <br/>
 #### Examples
 ```shell
-$ git-sync fetch --all -p
+$ gs fetch --all -p
 ```
 ```shell
-$ git-sync --target ^cool-tool pull
+$ gs --target ^cool-tool pull
 ```
 ```shell
-$ git-sync --target ^cool-tool --ignore ^wip-command pull
+$ gs --target ^cool-tool --ignore ^wip-command pull
+```
+
+<br/>
+### Development
+```
+$ git clone git@github.com:takecy/git-sync.git
+$ cd git-sync
+$ DEBUG=* go run gs/main.go version
 ```
 
 <br/>

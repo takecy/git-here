@@ -25,6 +25,6 @@ _testmain.go
 
 .idea
 *.iml
-git-sync_*
+gs_*
 
 Godeps/Readme

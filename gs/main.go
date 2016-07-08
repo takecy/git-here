@@ -8,20 +8,19 @@ import (
 	"github.com/takecy/git-sync/syncer"
 )
 
-const version = "0.6.0"
+const version = "0.7.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
 more info:   https://github.com/takecy/git-sync#readme
 
 Usage:
-  git-sync [original_options] <git_command> [git_options]
+  gs [original_options] <git_command> [git_options]
 
 Original Options:
   --target   Specific target directory with regex.
   --ignore   Specific ignore directory with regex.
-	--timeout  Specific timeout of performed commnad during on one directory.
-	           5s, 10m...
+  --timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...)
 
 Commands:
   version     Print version.
