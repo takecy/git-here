@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/takecy/git-sync/printer"
 	"golang.org/x/net/context"
 )
 
@@ -26,6 +28,9 @@ type Cmd struct {
 
 	// Options is git command options.
 	Options []string
+
+	// Writer is instance
+	Writer *printer.Printer
 }
 
 // Run is execute logic
@@ -88,30 +93,32 @@ func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
 
 	absPath, err := filepath.Abs(d)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "get.abs.failed: %s: %v\n", d, err)
+		err = errors.Wrap(err, fmt.Sprintf("get.abs.failed: %s", d))
+		s.Writer.Error(err)
 		return
 	}
 
 	err = os.Chdir(absPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "cd.failed: %s: %s: %v\n", d, absPath, err)
+		err = errors.Wrap(err, fmt.Sprintf("cd.failed: %s: %s", d, absPath))
+		s.Writer.Error(err)
 		return
 	}
 
 	execDir, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Getwd.failed: %s: %s: %v\n", d, absPath, err)
+		err = errors.Wrap(err, fmt.Sprintf("Getwd.failed: %s: %s", d, absPath))
+		s.Writer.Error(err)
 		return
 	}
 
-	fmt.Printf("exec.dir:%v\n", execDir)
+	s.Writer.Print(fmt.Sprintf("exec.dir:%v", execDir))
 
 	err = Git(s.Command, s.Options...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		fmt.Printf("error.\n\n")
+		s.Writer.Error(err)
 	} else {
-		fmt.Printf("done.\n\n")
+		s.Writer.Print("done")
 	}
 
 	os.Chdir("../")

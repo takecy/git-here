@@ -4,3 +4,7 @@ build:
 build_c:
 	go get -u github.com/mitchellh/gox
 	gox ./gs
+
+update:
+	godep update ./...
+	godep save ./...

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/takecy/git-sync/printer"
 	"github.com/takecy/git-sync/syncer"
 )
 
-const version = "0.7.0"
+const version = "0.8.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
@@ -59,5 +60,6 @@ func main() {
 		TimeOunt:  *timeout,
 		Command:   flag.Arg(0),
 		Options:   flag.Args()[1:],
+		Writer:    printer.NewPrinter(os.Stdout, os.Stderr),
 	}).Run()
 }
