@@ -9,7 +9,7 @@ import (
 	"github.com/takecy/git-sync/syncer"
 )
 
-const version = "0.8.0"
+const version = "0.9.0"
 
 const usage = `
 git-sync is sync repositories in current directory.
@@ -54,12 +54,20 @@ func main() {
 		return
 	}
 
-	(&syncer.Cmd{
+	writer := os.Stdout
+	errWriter := os.Stderr
+
+	err := (&syncer.Cmd{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
 		TimeOunt:  *timeout,
 		Command:   flag.Arg(0),
 		Options:   flag.Args()[1:],
-		Writer:    printer.NewPrinter(os.Stdout, os.Stderr),
+		Giter:     syncer.NewGiter(writer, errWriter),
+		Writer:    printer.NewPrinter(writer, errWriter),
 	}).Run()
+
+	if err != nil {
+		panic(err)
+	}
 }

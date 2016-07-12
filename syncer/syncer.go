@@ -31,10 +31,13 @@ type Cmd struct {
 
 	// Writer is instance
 	Writer *printer.Printer
+
+	// Giter is instance
+	Giter *Giter
 }
 
 // Run is execute logic
-func (s *Cmd) Run() {
+func (s *Cmd) Run() (err error) {
 	//
 	// list target directories
 	//
@@ -60,7 +63,7 @@ func (s *Cmd) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), to)
 	defer cancel()
 
-	fmt.Printf("exec.git.command: %s %v\n\n", s.Command, s.Options)
+	s.Writer.PrintCmd(s.Command, s.Options)
 	key := "target.dir.path"
 
 	//
@@ -71,10 +74,11 @@ func (s *Cmd) Run() {
 
 		err := s.callGit(dctx, d)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "callGit.failed: %s: %v\n", d, err)
 			continue
 		}
 	}
+
+	return
 }
 
 // callGit is call git command
@@ -94,31 +98,29 @@ func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
 	absPath, err := filepath.Abs(d)
 	if err != nil {
 		err = errors.Wrap(err, fmt.Sprintf("get.abs.failed: %s", d))
-		s.Writer.Error(err)
+		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
 	err = os.Chdir(absPath)
 	if err != nil {
 		err = errors.Wrap(err, fmt.Sprintf("cd.failed: %s: %s", d, absPath))
-		s.Writer.Error(err)
+		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
 	execDir, err := os.Getwd()
 	if err != nil {
 		err = errors.Wrap(err, fmt.Sprintf("Getwd.failed: %s: %s", d, absPath))
-		s.Writer.Error(err)
+		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
-	s.Writer.Print(fmt.Sprintf("exec.dir:%v", execDir))
-
-	err = Git(s.Command, s.Options...)
+	msg, errMsg, err := s.Giter.Git(s.Command, s.Options...)
 	if err != nil {
-		s.Writer.Error(err)
+		s.Writer.Error(printer.Result{Repo: execDir, Err: errors.Wrap(err, errMsg)})
 	} else {
-		s.Writer.Print("done")
+		s.Writer.Print(printer.Result{Repo: execDir, Msg: msg})
 	}
 
 	os.Chdir("../")

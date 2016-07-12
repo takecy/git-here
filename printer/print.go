@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -20,17 +21,31 @@ var helpers = template.FuncMap{
 }
 
 const successTmpl = `
- - {{. | cyan}}
+{{.Repo | cyan}}
+  {{.Msg | cyan}}
 `
 
 const errTmpl = `
- - {{. | red}}
+{{.Repo | cyan}}
+  {{.Msg | red}}
+`
+
+const cmdTmpl = `
+GitCommad is
+  {{.Cmd | green}} {{.Ops | green}}
 `
 
 // Printer is struct
 type Printer struct {
 	writer    io.Writer
 	errWriter io.Writer
+}
+
+// Result is output
+type Result struct {
+	Repo string
+	Msg  string
+	Err  error
 }
 
 // NewPrinter is constructor
@@ -43,19 +58,32 @@ func NewPrinter(writer, errWriter io.Writer) *Printer {
 	}
 
 	return &Printer{
-		writer: writer,
+		writer:    writer,
+		errWriter: errWriter,
 	}
 }
 
-// Print is print text
-func (p *Printer) Print(txt string) {
-	t(true).Execute(p.writer, txt)
+// PrintCmd is print command detail
+func (p *Printer) PrintCmd(cmd string, options []string) {
+	type cmds struct {
+		Cmd string
+		Ops string
+	}
+	t := template.Must(template.New("item").Funcs(helpers).Parse(cmdTmpl))
+	t.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")})
+	return
+}
+
+// Print is print result
+func (p *Printer) Print(res Result) {
+	t(true).Execute(p.writer, res)
 	return
 }
 
 // Error is print error
-func (p *Printer) Error(err error) {
-	t(false).Execute(p.writer, err.Error())
+func (p *Printer) Error(res Result) {
+	res.Msg = res.Err.Error()
+	t(false).Execute(p.errWriter, res)
 	return
 }
 
