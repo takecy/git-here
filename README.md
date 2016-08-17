@@ -1,6 +1,6 @@
 # git-sync
 
-[![Build Status](https://drone.io/github.com/takecy/git-sync/status.png)](https://drone.io/github.com/takecy/git-sync/latest)
+[![Build Status](https://travis-ci.org/takecy/git-sync.svg?branch=master)](https://travis-ci.org/takecy/git-sync)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-sync)](https://goreportcard.com/report/github.com/takecy/git-sync)
 
 ![](https://img.shields.io/badge/golang-1.7-blue.svg?style=flat-square)

@@ -1,25 +1,31 @@
 package syncer
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestIsExist(t *testing.T) {
-	err := IsExist()
+	gi := NewGiter(os.Stdout, os.Stderr)
+	err := gi.IsExist()
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 }
 
 func TestFetch(t *testing.T) {
+	gi := NewGiter(os.Stdout, os.Stderr)
 	args := []string{"--all", "-p"}
-	err := Fetch(args...)
+	_, _, err := gi.Git("fetch", args...)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 }
 
 func TestPull(t *testing.T) {
+	gi := NewGiter(os.Stdout, os.Stderr)
 	args := []string{"--verbose"}
-	err := Pull(args...)
+	_, _, err := gi.Git("pull", args...)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
