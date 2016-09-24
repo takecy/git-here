@@ -1,10 +1,10 @@
 package printer
 
 import (
-	"html/template"
 	"io"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/fatih/color"
 )
