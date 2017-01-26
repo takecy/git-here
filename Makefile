@@ -6,5 +6,4 @@ build_c:
 	gox ./gs
 
 update:
-	godep update ./...
-	godep save ./...
+	dep ensure -v -update
