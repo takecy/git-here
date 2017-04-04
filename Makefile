@@ -6,4 +6,5 @@ build_c:
 	gox ./gs
 
 update:
+	go get -u github.com/golang/dep/...
 	dep ensure -v -update
