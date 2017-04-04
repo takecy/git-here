@@ -1,26 +1,26 @@
 {
-    "memo": "5d9ec4d29fdfcc82b6f24d4f970d129cb526ee752e5be715d8e66fad5dc9f317",
+    "memo": "3078640dcc7659ce2f6c31028e369bb3071ba3cef1921c9c689b670b0a3a1cf5",
     "projects": [
         {
             "name": "github.com/fatih/color",
-            "version": "v1.2",
-            "revision": "34e4ee095d12986a2cef5ddb9aeb3b8cfcfea17c",
+            "version": "v1.4.1",
+            "revision": "9131ab34cf20d2f6d83fdc67168a5430d1c7dc23",
             "packages": [
                 "."
             ]
         },
         {
             "name": "github.com/mattn/go-colorable",
-            "version": "v0.0.6",
-            "revision": "ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8",
+            "version": "v0.0.7",
+            "revision": "d228849504861217f796da67fae4f6e347643f15",
             "packages": [
                 "."
             ]
         },
         {
             "name": "github.com/mattn/go-isatty",
-            "version": "v0.0.1",
-            "revision": "3a115632dcd687f9c8cd01679c83a06a0e21c1f3",
+            "version": "v0.0.2",
+            "revision": "fc9e8d8ef48496124e79ae0df75490096eccf6fe",
             "packages": [
                 "."
             ]
@@ -36,7 +36,7 @@
         {
             "name": "golang.org/x/net",
             "branch": "master",
-            "revision": "f2499483f923065a842d38eb4c7f1927e6fc6e6d",
+            "revision": "ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d",
             "packages": [
                 "context"
             ]
@@ -44,7 +44,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
+            "revision": "493114f68206f85e7e333beccfabc11e98cba8dd",
             "packages": [
                 "unix"
             ]

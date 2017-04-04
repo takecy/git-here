@@ -3,13 +3,14 @@
 [![Build Status](https://travis-ci.org/takecy/git-sync.svg?branch=master)](https://travis-ci.org/takecy/git-sync)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-sync)](https://goreportcard.com/report/github.com/takecy/git-sync)
 
-![](https://img.shields.io/badge/golang-1.7-blue.svg?style=flat-square)
+![](https://img.shields.io/badge/golang-1.8.0-blue.svg?style=flat-square)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-sync)
 ![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 git-sync is Run a command to all git repositories in the current directory.
 
 <br/>
+
 ### Usage
 ##### via Go
 ```shell
@@ -52,6 +53,7 @@ $ tree
 ```
 
 <br/>
+
 #### Examples
 ```shell
 $ gs fetch --all -p
@@ -64,6 +66,7 @@ $ gs --target ^cool-tool --ignore ^wip-command pull
 ```
 
 <br/>
+
 ### Development
 ```
 $ git clone git@github.com:takecy/git-sync.git
@@ -72,5 +75,6 @@ $ DEBUG=* go run gs/main.go version
 ```
 
 <br/>
+
 ## License
 [MIT](./LICENSE)
