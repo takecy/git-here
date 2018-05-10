@@ -6,12 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/takecy/git-sync/printer"
+	debug "github.com/tj/go-debug"
 	"golang.org/x/sync/errgroup"
 )
+
+var db = debug.Debug("syncer")
 
 // Cmd is struct
 type Cmd struct {
@@ -102,15 +106,34 @@ func (s *Cmd) Run() (err error) {
 	eg := errgroup.Group{}
 	start := time.Now()
 
+	throttle := make(chan struct{}, runtime.NumCPU())
+	done := make(chan struct{}, len(repos))
+
 	for i := range repos {
 		r := repos[i]
+
+		throttle <- struct{}{}
+
 		eg.Go(func() error {
-			return s.callGit(ctx, r)
+			err := s.callGit(ctx, r)
+			<-throttle
+			done <- struct{}{}
+			return err
 		})
 	}
 
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (done:%d) ----", len(done)))
+				os.Exit(1)
+			}
+		}
+	}()
+
 	if err := eg.Wait(); err != nil {
-		fmt.Printf("Error.exists: %v\n", err)
+		s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %v", err))
 	}
 
 	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Now().Sub(start)))

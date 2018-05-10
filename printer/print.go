@@ -39,6 +39,10 @@ const msgTmpl = `
   {{.Msg | green}}
 `
 
+const msgErrTmpl = `
+  {{.Msg | red}}
+`
+
 // Printer is struct
 type Printer struct {
 	writer    io.Writer
@@ -84,6 +88,16 @@ func (p *Printer) PrintMsg(msg string) {
 		Msg string
 	}
 	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
+	t.Execute(p.writer, message{Msg: msg})
+	return
+}
+
+// PrintMsgErr prints error message
+func (p *Printer) PrintMsgErr(msg string) {
+	type message struct {
+		Msg string
+	}
+	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgErrTmpl))
 	t.Execute(p.writer, message{Msg: msg})
 	return
 }

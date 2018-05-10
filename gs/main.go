@@ -21,7 +21,7 @@ Usage:
 Original Options:
   --target   Specific target directory with regex.
   --ignore   Specific ignore directory with regex.
-  --timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...)
+	--timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...) (default: 30s)
 
 Commands:
   version     Print version.
@@ -34,7 +34,7 @@ Options:
 var (
 	targetDir = flag.String("target", "", "")
 	ignoreDir = flag.String("ignore", "", "")
-	timeout   = flag.String("timeout", "5s", "")
+	timeout   = flag.String("timeout", "30s", "")
 )
 
 func main() {
