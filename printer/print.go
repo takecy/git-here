@@ -21,12 +21,12 @@ var helpers = template.FuncMap{
 }
 
 const successTmpl = `
-{{.Repo | cyan}}
-  {{.Msg | cyan}}
+{{.Repo }}
+  {{.Msg }}
 `
 
 const errTmpl = `
-{{.Repo | cyan}}
+{{.Repo }}
   {{.Msg | red}}
 `
 
