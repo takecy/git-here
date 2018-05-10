@@ -11,11 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/takecy/git-sync/printer"
-	debug "github.com/tj/go-debug"
 	"golang.org/x/sync/errgroup"
 )
-
-var db = debug.Debug("syncer")
 
 // Cmd is struct
 type Cmd struct {
