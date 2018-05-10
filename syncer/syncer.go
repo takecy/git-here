@@ -10,12 +10,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/takecy/git-sync/printer"
+	"golang.org/x/sync/errgroup"
 )
 
 // Cmd is struct
 type Cmd struct {
-	// TimeOunt is timeout of performed command on one direcotory.
-	TimeOunt string
+	// TimeOut is timeout of performed command on one direcotory.
+	TimeOut string
 
 	// TargetDir is target directory regex pattern.
 	TargetDir string
@@ -51,10 +52,12 @@ func (s *Cmd) Run() (err error) {
 		os.Exit(1)
 	}
 
+	fmt.Printf("repositorie are found: (%d)\n", len(dirs))
+
 	//
 	// set up context
 	//
-	to, err := time.ParseDuration(s.TimeOunt)
+	to, err := time.ParseDuration(s.TimeOut)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", "invalid timeout value.")
 		os.Exit(1)
@@ -64,37 +67,53 @@ func (s *Cmd) Run() (err error) {
 	defer cancel()
 
 	s.Writer.PrintCmd(s.Command, s.Options)
-	key := "target.dir.path"
 
 	//
-	// execute command for directories
+	// retrieve target repos
 	//
+	repos := make([]string, 0, len(dirs))
+
 	for _, d := range dirs {
-		dctx := context.WithValue(ctx, key, d)
-
-		err := s.callGit(dctx, d)
-		if err != nil {
-			continue
+		if s.IgnoreDir != "" {
+			if isMatch, _ := regexp.MatchString(s.IgnoreDir, d); isMatch {
+				return
+			}
 		}
+
+		if s.TargetDir != "" {
+			if isMatch, _ := regexp.MatchString(s.TargetDir, d); !isMatch {
+				return
+			}
+		}
+
+		repos = append(repos, d)
 	}
 
+	s.Writer.PrintMsg(fmt.Sprintf("target repositorie are: (%d)", len(repos)))
+
+	//
+	// execute command
+	//
+	eg := errgroup.Group{}
+	start := time.Now()
+
+	for i := range repos {
+		r := repos[i]
+		eg.Go(func() error {
+			return s.callGit(ctx, r)
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		fmt.Printf("Error.exists: %v\n", err)
+	}
+
+	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Now().Sub(start)))
 	return
 }
 
 // callGit is call git command
 func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
-	if s.IgnoreDir != "" {
-		if isMatch, _ := regexp.MatchString(s.IgnoreDir, d); isMatch {
-			return
-		}
-	}
-
-	if s.TargetDir != "" {
-		if isMatch, _ := regexp.MatchString(s.TargetDir, d); !isMatch {
-			return
-		}
-	}
-
 	absPath, err := filepath.Abs(d)
 	if err != nil {
 		err = errors.Wrapf(err, "get.abs.failed: %s", d)
@@ -102,28 +121,12 @@ func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
 		return
 	}
 
-	err = os.Chdir(absPath)
+	msg, errMsg, err := s.Giter.Git(s.Command, absPath, s.Options...)
 	if err != nil {
-		err = errors.Wrapf(err, "cd.failed: %s: %s", d, absPath)
-		s.Writer.Error(printer.Result{Err: err})
-		return
-	}
-
-	execDir, err := os.Getwd()
-	if err != nil {
-		err = errors.Wrapf(err, "Getwd.failed: %s: %s", d, absPath)
-		s.Writer.Error(printer.Result{Err: err})
-		return
-	}
-
-	msg, errMsg, err := s.Giter.Git(s.Command, s.Options...)
-	if err != nil {
-		s.Writer.Error(printer.Result{Repo: execDir, Err: errors.Wrapf(err, errMsg)})
+		s.Writer.Error(printer.Result{Repo: absPath, Err: errors.Wrapf(err, errMsg)})
 	} else {
-		s.Writer.Print(printer.Result{Repo: execDir, Msg: msg})
+		s.Writer.Print(printer.Result{Repo: absPath, Msg: msg})
 	}
-
-	os.Chdir("../")
 
 	return
 }
