@@ -76,20 +76,25 @@ func (s *Cmd) Run() (err error) {
 	for _, d := range dirs {
 		if s.IgnoreDir != "" {
 			if isMatch, _ := regexp.MatchString(s.IgnoreDir, d); isMatch {
-				return
+				continue
 			}
 		}
 
 		if s.TargetDir != "" {
 			if isMatch, _ := regexp.MatchString(s.TargetDir, d); !isMatch {
-				return
+				continue
 			}
 		}
 
 		repos = append(repos, d)
 	}
 
-	s.Writer.PrintMsg(fmt.Sprintf("target repositorie are: (%d)", len(repos)))
+	if len(repos) == 0 {
+		s.Writer.PrintMsg(fmt.Sprintf("No target repositories."))
+		return
+	}
+
+	s.Writer.PrintMsg(fmt.Sprintf("target repositorie: (%d)", len(repos)))
 
 	//
 	// execute command
