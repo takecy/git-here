@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/takecy/git-sync/printer"
-	"golang.org/x/net/context"
 )
 
 // Cmd is struct
@@ -97,28 +97,28 @@ func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
 
 	absPath, err := filepath.Abs(d)
 	if err != nil {
-		err = errors.Wrap(err, fmt.Sprintf("get.abs.failed: %s", d))
+		err = errors.Wrapf(err, "get.abs.failed: %s", d)
 		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
 	err = os.Chdir(absPath)
 	if err != nil {
-		err = errors.Wrap(err, fmt.Sprintf("cd.failed: %s: %s", d, absPath))
+		err = errors.Wrapf(err, "cd.failed: %s: %s", d, absPath)
 		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
 	execDir, err := os.Getwd()
 	if err != nil {
-		err = errors.Wrap(err, fmt.Sprintf("Getwd.failed: %s: %s", d, absPath))
+		err = errors.Wrapf(err, "Getwd.failed: %s: %s", d, absPath)
 		s.Writer.Error(printer.Result{Err: err})
 		return
 	}
 
 	msg, errMsg, err := s.Giter.Git(s.Command, s.Options...)
 	if err != nil {
-		s.Writer.Error(printer.Result{Repo: execDir, Err: errors.Wrap(err, errMsg)})
+		s.Writer.Error(printer.Result{Repo: execDir, Err: errors.Wrapf(err, errMsg)})
 	} else {
 		s.Writer.Print(printer.Result{Repo: execDir, Msg: msg})
 	}
