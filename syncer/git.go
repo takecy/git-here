@@ -30,17 +30,18 @@ func (*Giter) IsExist() error {
 }
 
 // Git is execute git command
-func (g *Giter) Git(command string, args ...string) (msg, errMsg string, err error) {
+func (g *Giter) Git(command, dir string, args ...string) (msg, errMsg string, err error) {
 	wr := new(bytes.Buffer)
 	errWr := new(bytes.Buffer)
 
 	cmdArgs := append([]string{command}, args...)
-	c := exec.Command("git", cmdArgs...)
-	c.Stdin = os.Stdin
-	c.Stdout = wr
-	c.Stderr = errWr
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Dir = dir
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = wr
+	cmd.Stderr = errWr
 
-	err = c.Run()
+	err = cmd.Run()
 	msg = wr.String()
 	errMsg = errWr.String()
 	return

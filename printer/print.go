@@ -31,8 +31,12 @@ const errTmpl = `
 `
 
 const cmdTmpl = `
-GitCommad is
+Git commad is
   {{.Cmd | green}} {{.Ops | green}}
+`
+
+const msgTmpl = `
+  {{.Msg | green}}
 `
 
 // Printer is struct
@@ -63,7 +67,7 @@ func NewPrinter(writer, errWriter io.Writer) *Printer {
 	}
 }
 
-// PrintCmd is print command detail
+// PrintCmd prints command detail
 func (p *Printer) PrintCmd(cmd string, options []string) {
 	type cmds struct {
 		Cmd string
@@ -74,13 +78,23 @@ func (p *Printer) PrintCmd(cmd string, options []string) {
 	return
 }
 
-// Print is print result
+// PrintMsg prints message
+func (p *Printer) PrintMsg(msg string) {
+	type message struct {
+		Msg string
+	}
+	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
+	t.Execute(p.writer, message{Msg: msg})
+	return
+}
+
+// Print prints result
 func (p *Printer) Print(res Result) {
 	t(true).Execute(p.writer, res)
 	return
 }
 
-// Error is print error
+// Error prints error
 func (p *Printer) Error(res Result) {
 	res.Msg = res.Err.Error()
 	t(false).Execute(p.errWriter, res)
