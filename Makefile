@@ -13,5 +13,8 @@ build_c:
 update:
 	dep ensure -v -update
 
+release:
+	GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
+
 test:
 	go test -race ./...

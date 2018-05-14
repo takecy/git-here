@@ -27,3 +27,5 @@ _testmain.go
 *.iml
 gs_*
 .vscode
+
+dist
