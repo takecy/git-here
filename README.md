@@ -1,6 +1,6 @@
 # git-here
 
-> `git-here(gh)` is Run a command to all git repositories in the current directory.
+> `git-here(gh)` is Run git command to all repositories in the current directory.
 
 <br/>
 
