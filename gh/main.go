@@ -22,7 +22,7 @@ Usage:
 Original Options:
   --target   Specific target directory with regex.
   --ignore   Specific ignore directory with regex.
-	--timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...) (default: 20s)
+  --timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...) (default: 20s)
 
 Commands:
   version     Print version. Whether check new version exists, and ask you to upgrade to latest version.
@@ -52,7 +52,7 @@ func main() {
 
 	if flag.Arg(0) == "version" {
 		chackUpdate()
-		fmt.Fprintf(os.Stdout, "Current: git-here %s\n", version)
+		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		return
 	}
 
@@ -94,7 +94,7 @@ func chackUpdate() {
 
 	v := semver.MustParse(version)
 	if !found || latest.Version.LTE(v) {
-		fmt.Printf("Current version is the latest.: %s\n", version)
+		fmt.Printf("Current version is the latest: %s\n", version)
 		return
 	}
 
@@ -108,6 +108,7 @@ func chackUpdate() {
 
 	switch input {
 	case "y":
+		fmt.Printf("updating....\n")
 	// next
 	case "n":
 		fmt.Printf("not update.\n")
