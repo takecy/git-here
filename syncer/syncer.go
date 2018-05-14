@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -104,16 +105,20 @@ func (s *Cmd) Run() (err error) {
 	start := time.Now()
 
 	throttle := make(chan struct{}, runtime.NumCPU())
+
+	yets := sync.Map{}
 	done := make(chan struct{}, len(repos))
 
 	for i := range repos {
 		r := repos[i]
+		yets.Store(r, struct{}{})
 
 		throttle <- struct{}{}
 
 		eg.Go(func() error {
 			err := s.callGit(ctx, r)
 			<-throttle
+			yets.Delete(r)
 			done <- struct{}{}
 			return err
 		})
@@ -124,6 +129,12 @@ func (s *Cmd) Run() (err error) {
 			select {
 			case <-ctx.Done():
 				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (done:%d) ----", len(done)))
+				fails := make([]string, 0, len(repos))
+				yets.Range(func(key, val interface{}) bool {
+					fails = append(fails, key.(string))
+					return true
+				})
+				s.Writer.PrintRepoErr(fmt.Sprintf("Failrues (%d)", len(fails)), fails)
 				os.Exit(1)
 			}
 		}

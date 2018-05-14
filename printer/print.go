@@ -36,11 +36,17 @@ Git commad is
 `
 
 const msgTmpl = `
-  {{.Msg | green}}
+{{.Msg | green}}
 `
 
 const msgErrTmpl = `
-  {{.Msg | red}}
+{{.Msg | red}}
+`
+
+const repoErrTmpl = `
+{{.Msg | red}}
+  {{ range .Repos }}- {{ . }}
+  {{ end }}
 `
 
 // Printer is struct
@@ -99,6 +105,17 @@ func (p *Printer) PrintMsgErr(msg string) {
 	}
 	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgErrTmpl))
 	t.Execute(p.writer, message{Msg: msg})
+	return
+}
+
+// PrintRepoErr prints error message
+func (p *Printer) PrintRepoErr(msg string, repos []string) {
+	type message struct {
+		Msg   string
+		Repos []string
+	}
+	t := template.Must(template.New("msg").Funcs(helpers).Parse(repoErrTmpl))
+	t.Execute(p.writer, message{Msg: msg, Repos: repos})
 	return
 }
 
