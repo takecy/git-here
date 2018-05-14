@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/takecy/git-sync/printer"
+	"github.com/takecy/git-here/printer"
 	"golang.org/x/sync/errgroup"
 )
 

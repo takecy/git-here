@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/takecy/git-sync/printer"
-	"github.com/takecy/git-sync/syncer"
+	"github.com/takecy/git-here/printer"
+	"github.com/takecy/git-here/syncer"
 )
 
-const version = "0.11.6"
+const version = "0.11.8"
 
-const usage = `
-git-sync is sync repositories in current directory.
-more info:   https://github.com/takecy/git-sync#readme
+const usage = `Run git command to all repositories in the current directory.
+more info: https://github.com/takecy/git-here#readme
 
 Usage:
-  gs [original_options] <git_command> [git_options]
+  gh [original_options] <git_command> [git_options]
 
 Original Options:
   --target   Specific target directory with regex.
@@ -34,7 +33,7 @@ Options:
 var (
 	targetDir = flag.String("target", "", "")
 	ignoreDir = flag.String("ignore", "", "")
-	timeout   = flag.String("timeout", "30s", "")
+	timeout   = flag.String("timeout", "20s", "")
 )
 
 func main() {
@@ -50,7 +49,7 @@ func main() {
 	}
 
 	if flag.Arg(0) == "version" {
-		fmt.Fprintf(os.Stdout, "git-sync %s\n", version)
+		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		return
 	}
 

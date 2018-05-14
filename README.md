@@ -1,33 +1,33 @@
-# git-sync
+# git-here
 
-[![Build Status](https://travis-ci.org/takecy/git-sync.svg?branch=master)](https://travis-ci.org/takecy/git-sync)
-[![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-sync)](https://goreportcard.com/report/github.com/takecy/git-sync)
-
-![](https://img.shields.io/badge/golang-1.10.2-blue.svg?style=flat-square)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-sync)
-![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+> `git-here(gh)` is Run a command to all git repositories in the current directory.
 
 <br/>
 
-> `git-sync(gs)` is Run a command to all git repositories in the current directory.
+[![Build Status](https://travis-ci.org/takecy/git-here.svg?branch=master)](https://travis-ci.org/takecy/git-here)
+[![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-here)](https://goreportcard.com/report/github.com/takecy/git-here)
+
+![](https://img.shields.io/badge/golang-1.10.2-blue.svg?style=flat-square)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
+![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 <br/>
 
 ## Usage
 ### via Go
 ```shell
-$ go get github.com/takecy/git-sync/gs
+$ go get github.com/takecy/git-here/gh
 ```
 ### via Binary  
-Download from [Release Page](https://github.com/takecy/git-sync/releases) for your environment.  
+Download from [Release Page](https://github.com/takecy/git-here/releases) for your environment.  
 and copy binary to your `$PATH`.
 
 ### Print usage
 ```
-$ gs
+$ gh
 
 Usage:
-  gs [original_options] <git_command> [git_options]
+  gh [original_options] <git_command> [git_options]
 
 Original Options:
   --target   Specific target directory with regex.
@@ -43,7 +43,7 @@ Options:
   Same as git.
 ```
 
-##### Default target directories
+### Default target directories
 ```shell
 $ tree
 .
@@ -58,13 +58,13 @@ $ tree
 
 ### Examples
 ```shell
-$ gs fetch --all -p
+$ gh fetch --all -p
 ```
 ```shell
-$ gs --target ^cool-tool pull
+$ gh --target ^cool-tool pull
 ```
 ```shell
-$ gs --target ^cool-tool --ignore ^wip-command pull
+$ gh --target ^cool-tool --ignore ^wip-command pull
 ```
 
 <br/>
@@ -75,9 +75,9 @@ $ gs --target ^cool-tool --ignore ^wip-command pull
 
 ### Prepare
 ```
-$ git clone git@github.com:takecy/git-sync.git
-$ cd git-sync
-$ DEBUG=* go run gs/main.go version
+$ git clone git@github.com:takecy/git-here.git
+$ cd git-here
+$ DEBUG=* go run gh/main.go version
 ```
 
 ### Testing
