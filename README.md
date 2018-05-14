@@ -6,7 +6,6 @@
 
 [![Build Status](https://travis-ci.org/takecy/git-here.svg?branch=master)](https://travis-ci.org/takecy/git-here)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-here)](https://goreportcard.com/report/github.com/takecy/git-here)
-
 ![](https://img.shields.io/badge/golang-1.10.2-blue.svg?style=flat-square)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
 ![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
@@ -14,9 +13,34 @@
 <br/>
 
 ## Usage
+```
+$ gh pull
+```
+```
+$ gh fetch --all -p
+```
+```
+$ gh --target ^cool-tool pull
+```
+```
+$ gh --target ^cool-tool --ignore ^wip-command pull
+```
+
+### Default target directories
+```shell
+$ tree
+.
+├── .Hoge        // ignore (start from comma)
+├── repo_a       // target
+├── dir
+│   └── repo_b   // ignore
+└── repo_c       // target
+```
+
+## Install
 ### via Go
 ```shell
-$ go get github.com/takecy/git-here/gh
+$ go get -u github.com/takecy/git-here/gh
 ```
 ### via Binary  
 Download from [Release Page](https://github.com/takecy/git-here/releases) for your environment.  
@@ -36,35 +60,11 @@ Original Options:
              5s, 10m...
 
 Commands:
-  version     Print version.
+  version     Print version. Whether check new version exists, and ask you to upgrade to latest version.
   <command>   Same as git command. (fetch, pull, status...)
 
 Options:
   Same as git.
-```
-
-### Default target directories
-```shell
-$ tree
-.
-├── .Hoge        // ignore (start from comma)
-├── repo_a       // target
-├── dir
-│   └── repo_b   // ignore
-└── repo_c       // target
-```
-
-<br/>
-
-### Examples
-```shell
-$ gh fetch --all -p
-```
-```shell
-$ gh --target ^cool-tool pull
-```
-```shell
-$ gh --target ^cool-tool --ignore ^wip-command pull
 ```
 
 <br/>
