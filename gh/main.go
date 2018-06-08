@@ -22,7 +22,7 @@ Usage:
 Original Options:
   --target   Specific target directory with regex.
   --ignore   Specific ignore directory with regex.
-  --timeout  Specific timeout of performed commnad during on one directory. (5s, 10m...) (default: 20s)
+  --timeout  Specific timeout of performed command during on one directory. (5s, 10m...) (default: 20s)
 
 Commands:
   version     Print version. Whether check new version exists, and ask you to upgrade to latest version.

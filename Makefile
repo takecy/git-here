@@ -5,7 +5,7 @@ prepare:
 	go get -u github.com/golang/dep/cmd/dep
 
 build:
-	go build -o gh_dev ./gs
+	go build -o gh_dev ./gh
 
 update:
 	dep ensure -v -update

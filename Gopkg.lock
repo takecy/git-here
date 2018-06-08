@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
-  version = "v1.6.0"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -63,7 +63,7 @@
   branch = "master"
   name = "github.com/rhysd/go-github-selfupdate"
   packages = ["selfupdate"]
-  revision = "953b97fcd154498041d22cd4442486df1e4eec26"
+  revision = "41c1bbb0804a2994dae69502a8c76e7c456ad45e"
 
 [[projects]]
   name = "github.com/tcnksm/go-gitconfig"
@@ -89,7 +89,7 @@
     "context",
     "context/ctxhttp"
   ]
-  revision = "2491c5de3490fced2f6cff376127c667efeed857"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
@@ -98,7 +98,7 @@
     ".",
     "internal"
   ]
-  revision = "cdc340f7c179dbbfa4afd43b7614e8fcadde4269"
+  revision = "1e0a3fa8ba9a5c9eb35c271780101fdaf1b205d7"
 
 [[projects]]
   branch = "master"
@@ -110,7 +110,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "d0faeb539838e250bd0a9db4182d48d4a1915181"
+  revision = "9527bec2660bd847c050fda93a0f0c6dee0800bb"
 
 [[projects]]
   name = "google.golang.org/appengine"
