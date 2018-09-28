@@ -11,7 +11,7 @@ import (
 	"github.com/takecy/git-here/syncer"
 )
 
-const version = "0.12.3"
+const version = "0.12.4"
 
 const usage = `Run git command to all repositories in the current directory.
 more info: https://github.com/takecy/git-here#readme

@@ -54,7 +54,7 @@ func (s *Cmd) Run() (err error) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("repositorie are found: (%d)\n", len(dirs))
+	fmt.Printf("repositories are found: (%d)\n", len(dirs))
 
 	//
 	// set up context
