@@ -2,16 +2,15 @@
 
 prepare:
 	brew install goreleaser/tap/goreleaser
-	go get -u github.com/golang/dep/cmd/dep
 
 build:
-	go build -o gh_dev ./gh
+	GO111MODULE=on go build -o gh_dev ./gh
 
 update:
-	dep ensure -v -update
+	GO111MODULE=on go get -u
 
 release:
-	GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
+	GO111MODULE=on GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
 
 test:
-	go test -v -race ./...
+	GO111MODULE=on go test -v -race ./...
