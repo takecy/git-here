@@ -80,7 +80,7 @@ func chackUpdate() {
 		APIToken: "fa0b867fcef62ec8614dbcf2f58104630acda374", // read only of public info
 	})
 	if err != nil {
-		fmt.Printf("Chcke update failed: %v\n", err)
+		fmt.Printf("Check update failed: %v\n", err)
 		return
 	}
 

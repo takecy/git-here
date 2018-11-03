@@ -6,6 +6,9 @@ prepare:
 build:
 	GO111MODULE=on go build -o gh_dev ./gh
 
+vendor: update
+	GO111MODULE=on go mod vendor
+
 update:
 	GO111MODULE=on go get -u
 
