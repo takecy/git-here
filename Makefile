@@ -6,11 +6,14 @@ prepare:
 build:
 	GO111MODULE=on go build -o gh_dev ./gh
 
+install:
+	GO111MODULE=on go install -i ./gh
+
 vendor: update
 	GO111MODULE=on go mod vendor
 
 update:
-	GO111MODULE=on go get -u
+	GO111MODULE=on go get -u ./...
 
 release:
 	GO111MODULE=on GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
