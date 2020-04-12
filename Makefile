@@ -9,11 +9,18 @@ build:
 install:
 	GO111MODULE=on go install -i ./gh
 
-vendor: update
-	GO111MODULE=on go mod vendor
+update: update_all tidy
 
-update:
-	GO111MODULE=on go get -u ./...
+restore: tidy
+
+tidy:
+	GO111MODULE=on go mod tidy
+
+update_all:
+	GO111MODULE=on go get -v all
+
+outdated:
+	GO111MODULE=on go list -m -u all
 
 release:
 	GO111MODULE=on GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
