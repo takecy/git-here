@@ -11,7 +11,7 @@ import (
 	"github.com/takecy/git-here/syncer"
 )
 
-const version = "0.12.6"
+const version = "0.12.7"
 
 const usage = `Run git command to all repositories in the current directory.
 more info: https://github.com/takecy/git-here#readme
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	if flag.Arg(0) == "version" {
-		chackUpdate()
+		checkUpdate()
 		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		return
 	}
@@ -74,7 +74,7 @@ func main() {
 	}
 }
 
-func chackUpdate() {
+func checkUpdate() {
 	repo := "takecy/git-here"
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
 		APIToken: "fa0b867fcef62ec8614dbcf2f58104630acda374", // read only of public info

@@ -96,7 +96,7 @@ func (s *Cmd) Run() (err error) {
 		return
 	}
 
-	s.Writer.PrintMsg(fmt.Sprintf("target repositorie: (%d)", len(repos)))
+	s.Writer.PrintMsg(fmt.Sprintf("target repositories: (%d)", len(repos)))
 
 	//
 	// execute command
@@ -116,11 +116,12 @@ func (s *Cmd) Run() (err error) {
 		throttle <- struct{}{}
 
 		eg.Go(func() error {
-			err := s.callGit(ctx, r)
-			<-throttle
-			yets.Delete(r)
-			done <- struct{}{}
-			return err
+			defer func() {
+				<-throttle
+				yets.Delete(r)
+				done <- struct{}{}
+			}()
+			return s.callGit(ctx, r)
 		})
 	}
 
