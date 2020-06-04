@@ -8,29 +8,29 @@ import (
 	"os/exec"
 )
 
-// Giter is strcut
-type Giter struct {
+// Gitter is strcut
+type Gitter struct {
 	writer    io.Writer
 	errWriter io.Writer
 }
 
-// NewGiter is constructor
-func NewGiter(writer, errWriter io.Writer) *Giter {
-	return &Giter{
+// NewGitter is constructor
+func NewGitter(writer, errWriter io.Writer) *Gitter {
+	return &Gitter{
 		writer:    writer,
 		errWriter: errWriter,
 	}
 }
 
 // IsExist is check git command
-func (*Giter) IsExist() error {
+func (*Gitter) IsExist() error {
 	s, err := exec.LookPath("git")
 	fmt.Fprintf(os.Stdout, "%s", s)
 	return err
 }
 
 // Git is execute git command
-func (g *Giter) Git(command, dir string, args ...string) (msg, errMsg string, err error) {
+func (g *Gitter) Git(command, dir string, args ...string) (msg, errMsg string, err error) {
 	wr := new(bytes.Buffer)
 	errWr := new(bytes.Buffer)
 

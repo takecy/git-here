@@ -6,7 +6,7 @@ import (
 )
 
 func TestIsExist(t *testing.T) {
-	gi := NewGiter(os.Stdout, os.Stderr)
+	gi := NewGitter(os.Stdout, os.Stderr)
 	err := gi.IsExist()
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -14,7 +14,7 @@ func TestIsExist(t *testing.T) {
 }
 
 func TestFetch(t *testing.T) {
-	gi := NewGiter(os.Stdout, os.Stderr)
+	gi := NewGitter(os.Stdout, os.Stderr)
 	args := []string{"--all", "-p"}
 	_, _, err := gi.Git("fetch", ".", args...)
 	if err != nil {
@@ -23,7 +23,7 @@ func TestFetch(t *testing.T) {
 }
 
 func TestPull(t *testing.T) {
-	gi := NewGiter(os.Stdout, os.Stderr)
+	gi := NewGitter(os.Stdout, os.Stderr)
 	args := []string{"--verbose"}
 	_, _, err := gi.Git("pull", ".", args...)
 	if err != nil {

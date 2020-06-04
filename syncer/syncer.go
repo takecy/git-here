@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,8 +33,11 @@ type Cmd struct {
 	// Writer is instance
 	Writer *printer.Printer
 
-	// Giter is instance
-	Giter *Giter
+	// ConNum is concurrency level
+	ConNum int
+
+	// Gitter is instance
+	Gitter *Gitter
 }
 
 // Run is execute logic
@@ -103,25 +104,23 @@ func (s *Cmd) Run() (err error) {
 	//
 	eg := errgroup.Group{}
 	start := time.Now()
-
-	throttle := make(chan struct{}, runtime.NumCPU())
-
-	yets := sync.Map{}
-	done := make(chan struct{}, len(repos))
+	throttle := make(chan struct{}, s.ConNum)
 
 	for i := range repos {
+		num := i + 1
 		r := repos[i]
-		yets.Store(r, struct{}{})
-
 		throttle <- struct{}{}
 
 		eg.Go(func() error {
 			defer func() {
 				<-throttle
-				yets.Delete(r)
-				done <- struct{}{}
 			}()
-			return s.callGit(ctx, r)
+			err := s.callGit(ctx, r)
+			if err != nil {
+				s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %s\n%v", r, err))
+			}
+			s.Writer.PrintMsg(fmt.Sprintf("Done: %d - %s", num, r))
+			return nil
 		})
 	}
 
@@ -129,13 +128,7 @@ func (s *Cmd) Run() (err error) {
 		for {
 			select {
 			case <-ctx.Done():
-				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (done:%d) ----", len(done)))
-				fails := make([]string, 0, len(repos))
-				yets.Range(func(key, val interface{}) bool {
-					fails = append(fails, key.(string))
-					return true
-				})
-				s.Writer.PrintRepoErr(fmt.Sprintf("Failrues (%d)", len(fails)), fails)
+				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) ----", time.Now().Sub(start)))
 				os.Exit(1)
 			}
 		}
@@ -146,6 +139,7 @@ func (s *Cmd) Run() (err error) {
 	}
 
 	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Now().Sub(start)))
+
 	return
 }
 
@@ -158,7 +152,7 @@ func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
 		return
 	}
 
-	msg, errMsg, err := s.Giter.Git(s.Command, absPath, s.Options...)
+	msg, errMsg, err := s.Gitter.Git(s.Command, absPath, s.Options...)
 	if err != nil {
 		s.Writer.Error(printer.Result{Repo: absPath, Err: errors.Wrapf(err, errMsg)})
 	} else {

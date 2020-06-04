@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
@@ -11,7 +12,7 @@ import (
 	"github.com/takecy/git-here/syncer"
 )
 
-const version = "0.12.7"
+const version = "0.12.8"
 
 const usage = `Run git command to all repositories in the current directory.
 more info: https://github.com/takecy/git-here#readme
@@ -35,6 +36,7 @@ Options:
 var (
 	targetDir = flag.String("target", "", "")
 	ignoreDir = flag.String("ignore", "", "")
+	conNum    = flag.Int("c", runtime.NumCPU(), "concurrency level")
 	timeout   = flag.String("timeout", "20s", "")
 )
 
@@ -56,6 +58,10 @@ func main() {
 		return
 	}
 
+	if *conNum == 0 {
+		*conNum = runtime.NumCPU()
+	}
+
 	writer := os.Stdout
 	errWriter := os.Stderr
 
@@ -65,7 +71,8 @@ func main() {
 		TimeOut:   *timeout,
 		Command:   flag.Arg(0),
 		Options:   flag.Args()[1:],
-		Giter:     syncer.NewGiter(writer, errWriter),
+		ConNum:    *conNum,
+		Gitter:    syncer.NewGitter(writer, errWriter),
 		Writer:    printer.NewPrinter(writer, errWriter),
 	}).Run()
 
