@@ -87,6 +87,7 @@ func main() {
 }
 
 func checkUpdate() {
+	fmt.Printf("checking latest version...\n")
 	repo := "takecy/git-here"
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
 		APIToken: "fa0b867fcef62ec8614dbcf2f58104630acda374", // read only of public info
@@ -106,7 +107,7 @@ func checkUpdate() {
 
 	v := semver.MustParse(version)
 	if !found || latest.Version.LTE(v) {
-		fmt.Printf("Current version is the latest: version: %s\nsha: %s\ndate:%s\n", version, commit, date)
+		fmt.Printf("Current version is the latest:\nversion: %s\nsha: %s\ndate:%s\n", version, commit, date)
 		return
 	}
 

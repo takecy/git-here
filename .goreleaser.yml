@@ -12,11 +12,11 @@ builds:
     binary: gh
     ldflags: 
       - -s -w
-      - -X github.com/takecy/git-here/gh/main.version={{.Version}}
-      - -X github.com/takecy/git-here/gh/main.commit={{.Commit}}
-      - -X github.com/takecy/git-here/gh/main.date={{.Date}}
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ .Date }}
     env:
-    - CGO_ENABLED=0
+      - CGO_ENABLED=0
 archives:
   -
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
@@ -29,7 +29,7 @@ changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - '^docs:'
+      - '^test:'
 release:
   prerelease: auto
