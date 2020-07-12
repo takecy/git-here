@@ -1,7 +1,4 @@
-.PHONY: prepare build update release test
-
-prepare:
-	brew install goreleaser/tap/goreleaser
+.PHONY: build install update restore tidy update_all outdated
 
 build:
 	GO111MODULE=on go build -o gh_dev ./gh
@@ -22,8 +19,6 @@ update_all:
 outdated:
 	GO111MODULE=on go list -m -u all
 
-release:
-	GO111MODULE=on GITHUB_TOKEN=$${GITHUB_TOKEN} goreleaser --rm-dist
-
+.PHONY: test
 test:
 	GO111MODULE=on go test -v -race ./...
