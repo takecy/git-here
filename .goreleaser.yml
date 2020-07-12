@@ -12,9 +12,9 @@ builds:
     binary: gh
     ldflags: 
       - -s -w
-      - -X github.com/takecy/git-here/gh.version={{.Version}}
-      - -X github.com/takecy/git-here/gh.commit={{.Commit}}
-      - -X github.com/takecy/git-here/gh.date={{.Date}}
+      - -X github.com/takecy/git-here/gh/main.version={{.Version}}
+      - -X github.com/takecy/git-here/gh/main.commit={{.Commit}}
+      - -X github.com/takecy/git-here/gh/main.date={{.Date}}
     env:
     - CGO_ENABLED=0
 archives:
