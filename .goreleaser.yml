@@ -11,8 +11,10 @@ builds:
     main: ./gh/main.go
     binary: gh
     ldflags: 
-      - -X github.com/takecy/git-here/cmd.Version={{.Version}}
-      - -X github.com/takecy/git-here/cmd.Commit={{.ShortCommit}}
+      - -s -w
+      - -X github.com/takecy/git-here/gh.version={{.Version}}
+      - -X github.com/takecy/git-here/gh.commit={{.Commit}}
+      - -X github.com/takecy/git-here/gh.date={{.Date}}
     env:
     - CGO_ENABLED=0
 archives:

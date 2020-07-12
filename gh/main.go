@@ -14,8 +14,9 @@ import (
 
 // set by build
 var (
-	Version = ""
-	Commit  = ""
+	version = "unset"
+	commit  = "unset"
+	date    = "unset"
 )
 
 const usage = `Run git command to all repositories in the current directory.
@@ -58,7 +59,7 @@ func main() {
 
 	if flag.Arg(0) == "version" {
 		checkUpdate()
-		fmt.Fprintf(os.Stdout, "git-here %s - %s\n", Version, Commit)
+		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		return
 	}
 
@@ -103,9 +104,9 @@ func checkUpdate() {
 
 	fmt.Printf("the latest version is %s (%s)\n", latest.Version, latest.PublishedAt.Format("2006-01-02"))
 
-	v := semver.MustParse(Version)
+	v := semver.MustParse(version)
 	if !found || latest.Version.LTE(v) {
-		fmt.Printf("Current version is the latest: %s\n", Version)
+		fmt.Printf("Current version is the latest: version: %s\nsha: %s\ndate:%s\n", version, commit, date)
 		return
 	}
 
