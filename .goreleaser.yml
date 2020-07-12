@@ -1,9 +1,18 @@
 # This is an example goreleaser.yaml file with some sane defaults.
 # Make sure to check the documentation at http://goreleaser.com
 project_name: gh
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
 builds:
   -
     main: ./gh/main.go
+    binary: gh
+    ldflags: 
+      - -X github.com/takecy/git-here/cmd.Version={{.Version}}
+      - -X github.com/takecy/git-here/cmd.Commit={{.ShortCommit}}
     env:
     - CGO_ENABLED=0
 archives:
@@ -20,3 +29,5 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+release:
+  prerelease: auto

@@ -12,7 +12,11 @@ import (
 	"github.com/takecy/git-here/syncer"
 )
 
-const version = "0.12.8"
+// set by build
+var (
+	Version = ""
+	Commit  = ""
+)
 
 const usage = `Run git command to all repositories in the current directory.
 more info: https://github.com/takecy/git-here#readme
@@ -54,7 +58,7 @@ func main() {
 
 	if flag.Arg(0) == "version" {
 		checkUpdate()
-		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
+		fmt.Fprintf(os.Stdout, "git-here %s - %s\n", Version, Commit)
 		return
 	}
 
@@ -99,9 +103,9 @@ func checkUpdate() {
 
 	fmt.Printf("the latest version is %s (%s)\n", latest.Version, latest.PublishedAt.Format("2006-01-02"))
 
-	v := semver.MustParse(version)
+	v := semver.MustParse(Version)
 	if !found || latest.Version.LTE(v) {
-		fmt.Printf("Current version is the latest: %s\n", version)
+		fmt.Printf("Current version is the latest: %s\n", Version)
 		return
 	}
 
