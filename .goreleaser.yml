@@ -17,6 +17,13 @@ builds:
       - -X main.date={{ .Date }}
     env:
       - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
 archives:
   -
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
