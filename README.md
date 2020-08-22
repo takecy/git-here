@@ -4,9 +4,9 @@
 
 <br/>
 
-[![Build Status](https://travis-ci.org/takecy/git-here.svg?branch=master)](https://travis-ci.org/takecy/git-here)
+![unittest](https://github.com/takecy/git-here/workflows/unittest/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-here)](https://goreportcard.com/report/github.com/takecy/git-here)
-![](https://img.shields.io/badge/golang-1.14.4-blue.svg?style=flat-square)
+![](https://img.shields.io/badge/golang-1.15.0-blue.svg?style=flat-square)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
 ![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
