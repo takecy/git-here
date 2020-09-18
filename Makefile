@@ -1,10 +1,10 @@
 .PHONY: build install update restore tidy update_all outdated
 
 build:
-	GO111MODULE=on go build -o gh_dev ./gh
+	GO111MODULE=on go build -o gih_dev ./gih
 
 install:
-	GO111MODULE=on go install -i ./gh
+	GO111MODULE=on go install -i ./gih
 
 update: update_all tidy
 

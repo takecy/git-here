@@ -23,7 +23,7 @@ const usage = `Run git command to all repositories in the current directory.
 more info: https://github.com/takecy/git-here#readme
 
 Usage:
-  gh [original_options] <git_command> [git_options]
+  gih [original_options] <git_command> [git_options]
 
 Original Options:
   --target   Specific target directory with regex.
