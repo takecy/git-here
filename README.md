@@ -10,6 +10,9 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
 ![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/takecy/git-here)
+
+
 <br/>
 
 ## Usage
