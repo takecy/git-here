@@ -90,7 +90,7 @@ func checkUpdate() {
 	fmt.Printf("checking latest version...\n")
 	repo := "takecy/git-here"
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
-		APIToken: "fa0b867fcef62ec8614dbcf2f58104630acda374", // read only of public info
+		APIToken: "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", // read only of public info
 	})
 	if err != nil {
 		fmt.Printf("Check update failed: %v\n", err)
@@ -105,7 +105,11 @@ func checkUpdate() {
 
 	fmt.Printf("the latest version is %s (%s)\n", latest.Version, latest.PublishedAt.Format("2006-01-02"))
 
-	v := semver.MustParse(version)
+	v, err := semver.Parse(version)
+	if err != nil {
+		fmt.Printf("err: parse version failed: %v\n", err)
+		return
+	}
 	if !found || latest.Version.LTE(v) {
 		fmt.Printf("Current version is the latest:\nversion: %s\nsha: %s\ndate:%s\n", version, commit, date)
 		return

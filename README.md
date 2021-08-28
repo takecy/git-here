@@ -6,7 +6,7 @@
 
 ![unittest](https://github.com/takecy/git-here/workflows/unittest/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-here)](https://goreportcard.com/report/github.com/takecy/git-here)
-![](https://img.shields.io/badge/golang-1.15+-blue.svg?style=flat-square)
+![](https://img.shields.io/badge/golang-1.16+-blue.svg?style=flat-square)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
 ![](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
@@ -74,7 +74,7 @@ Options:
 
 ## Development
 
-* Go 1.15+
+* Go 1.16+
 
 #### Why this repository have vendor?
 It is to simplify development. You can start right away just by cloning.
