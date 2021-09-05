@@ -36,14 +36,14 @@ $ tree
 ├── .Hoge        // ignore (start from comma)
 ├── repo_a       // target
 ├── dir
-│   └── repo_b   // ignore
+│   └── repo_b   // not target
 └── repo_c       // target
 ```
 
 ## Install
 ### via Go
 ```shell
-$ go get -u github.com/takecy/git-here/gih
+$ go install github.com/takecy/git-here/gih@latest
 ```
 ### via Binary  
 Download from [Release Page](https://github.com/takecy/git-here/releases) for your environment.  
