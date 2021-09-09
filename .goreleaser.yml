@@ -22,7 +22,7 @@ builds:
       - goos: darwin
         goarch: 386
 archives:
-  - name_template: "{{.ProjectName}}_{{.Os}}_{{.Arch}}_{{.Version}}"
+  - name_template: "{{.ProjectName}}_{{.Os}}_{{.Arch}}"
     format: binary
 checksum:
   name_template: 'checksums.txt'
