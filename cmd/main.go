@@ -14,9 +14,11 @@ import (
 
 // set by build
 var (
-	version = "unset"
-	commit  = "unset"
-	date    = "unset"
+	version   = "0.13.2"
+	commit    = "unset"
+	date      = "unset"
+	builtBy   = "unset"
+	goversion = "1.17.0"
 )
 
 const usage = `Run git command to all repositories in the current directory.
@@ -58,7 +60,7 @@ func main() {
 	}
 
 	if flag.Arg(0) == "version" {
-		checkUpdate()
+		// checkUpdate()
 		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		return
 	}

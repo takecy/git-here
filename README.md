@@ -83,7 +83,7 @@ It is to simplify development. You can start right away just by cloning.
 ```
 $ git clone git@github.com:takecy/git-here.git
 $ cd git-here
-$ DEBUG=* go run gih/main.go version
+$ DEBUG=* go run cmd/main.go version
 ```
 
 ### Testing

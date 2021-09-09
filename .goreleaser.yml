@@ -5,14 +5,13 @@ before:
   hooks:
     - go mod tidy
 builds:
-  -
-    main: ./gih/main.go
+  - main: ./cmd/main.go
     binary: gih
     ldflags: 
       - -s -w
-      - -X main.version={{ .Version }}
-      - -X main.commit={{ .ShortCommit }}
-      - -X main.date={{ .Date }}
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,13 +22,12 @@ builds:
       - goos: darwin
         goarch: 386
 archives:
-  -
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{.ProjectName}}_{{.Os}}_{{.Arch}}_{{.Version}}"
     format: binary
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{.Tag}}-next"
 changelog:
   sort: asc
   filters:

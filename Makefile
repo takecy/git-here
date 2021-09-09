@@ -14,7 +14,7 @@ tidy:
 	go mod tidy
 
 update_all:
-	go get -v all
+	go get -u -v ./...
 
 outdated:
 	go list -m -u all
