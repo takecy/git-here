@@ -1,10 +1,10 @@
 .PHONY: build install update restore tidy update_all outdated
 
 build:
-	go build -o gih_dev ./gih
+	go build -o gih_dev -ldflags "-X main.version='0.0.1-test'" ./cmd
 
 install:
-	go install ./gih
+	go install ./cmd
 
 update: update_all tidy
 

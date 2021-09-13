@@ -62,12 +62,15 @@ func main() {
 	if flag.Arg(0) == "version" {
 		// checkUpdate()
 		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
+		fmt.Fprintf(os.Stdout, "go version %s\n", goversion)
 		return
 	}
 
 	if *conNum == 0 {
 		*conNum = runtime.NumCPU()
 	}
+
+	fmt.Printf("args: targetDir: %s ignoreDir: %s  concurrency: %d  timeout: %v\n", *targetDir, *ignoreDir, *conNum, *timeout)
 
 	writer := os.Stdout
 	errWriter := os.Stderr

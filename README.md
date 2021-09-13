@@ -17,7 +17,7 @@
 
 ## Usage
 ```
-$ gih pull
+$ gih --timeout 60s pull
 ```
 ```
 $ gih fetch --all -p

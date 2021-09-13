@@ -20,34 +20,28 @@ var helpers = template.FuncMap{
 	"red":     color.RedString,
 }
 
-const successTmpl = `
-{{.Repo }}
+const successTmpl = `{{.Repo }}
   {{.Msg }}
 `
 
-const errTmpl = `
-{{.Repo }}
+const errTmpl = `{{.Repo }}
   {{.Msg | red}}
 `
 
-const cmdTmpl = `
-Git commad is
+const cmdTmpl = `Git commad is
   {{.Cmd | green}} {{.Ops | green}}
 `
 
-const msgTmpl = `
-{{.Msg | green}}
+const msgTmpl = `{{.Msg | green}}
 `
 
-const msgErrTmpl = `
-{{.Msg | red}}
+const msgErrTmpl = `{{.Msg | red}}
 `
 
 const repoErrTmpl = `
 {{.Msg | red}}
   {{ range .Repos }}- {{ . }}
-  {{ end }}
-`
+  {{ end }}`
 
 // Printer is struct
 type Printer struct {

@@ -57,25 +57,12 @@ func (s *Cmd) Run() (err error) {
 
 	fmt.Printf("repositories are found: (%d)\n", len(dirs))
 
-	//
-	// set up context
-	//
-	to, err := time.ParseDuration(s.TimeOut)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", "invalid timeout value.")
-		os.Exit(1)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), to)
-	defer cancel()
-
 	s.Writer.PrintCmd(s.Command, s.Options)
 
 	//
 	// retrieve target repos
 	//
 	repos := make([]string, 0, len(dirs))
-
 	for _, d := range dirs {
 		if s.IgnoreDir != "" {
 			if isMatch, _ := regexp.MatchString(s.IgnoreDir, d); isMatch {
@@ -97,7 +84,8 @@ func (s *Cmd) Run() (err error) {
 		return
 	}
 
-	s.Writer.PrintMsg(fmt.Sprintf("target repositories: (%d)", len(repos)))
+	targetRepoNum := len(repos)
+	s.Writer.PrintMsg(fmt.Sprintf("target repositories: (%d)", targetRepoNum))
 
 	//
 	// execute command
@@ -105,6 +93,15 @@ func (s *Cmd) Run() (err error) {
 	eg := errgroup.Group{}
 	start := time.Now()
 	throttle := make(chan struct{}, s.ConNum)
+
+	// set up context
+	to, err := time.ParseDuration(s.TimeOut)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", "invalid timeout value.")
+		os.Exit(1)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), to)
+	defer cancel()
 
 	for i := range repos {
 		num := i + 1
@@ -115,11 +112,15 @@ func (s *Cmd) Run() (err error) {
 			defer func() {
 				<-throttle
 			}()
-			err := s.callGit(ctx, r)
+
+			err := s.execCmd(ctx, r)
 			if err != nil {
-				s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %s\n%v", r, err))
+				s.Writer.PrintMsgErr(fmt.Sprintf("Failed: %s\n%v", r, err))
+			} else {
+				s.Writer.PrintMsg(fmt.Sprintf("Success: %s\n", r))
 			}
-			s.Writer.PrintMsg(fmt.Sprintf("Done: %d - %s", num, r))
+
+			s.Writer.PrintMsg(fmt.Sprintf("Done: %d/%d", num, targetRepoNum))
 			return nil
 		})
 	}
@@ -128,7 +129,7 @@ func (s *Cmd) Run() (err error) {
 		for {
 			select {
 			case <-ctx.Done():
-				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) ----", time.Now().Sub(start)))
+				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) [%v]----", time.Now().Sub(start).String(), ctx.Err()))
 				os.Exit(1)
 			}
 		}
@@ -139,12 +140,11 @@ func (s *Cmd) Run() (err error) {
 	}
 
 	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Now().Sub(start)))
-
 	return
 }
 
-// callGit is call git command
-func (s *Cmd) callGit(ctx context.Context, d string) (err error) {
+// execCmd is execute git command
+func (s *Cmd) execCmd(ctx context.Context, d string) (err error) {
 	absPath, err := filepath.Abs(d)
 	if err != nil {
 		err = errors.Wrapf(err, "get.abs.failed: %s", d)
