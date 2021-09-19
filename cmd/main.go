@@ -18,7 +18,7 @@ var (
 	commit    = "unset"
 	date      = "unset"
 	builtBy   = "unset"
-	goversion = "1.17.0"
+	goversion = "1.17.1"
 )
 
 const usage = `Run git command to all repositories in the current directory.
@@ -75,7 +75,7 @@ func main() {
 	writer := os.Stdout
 	errWriter := os.Stderr
 
-	err := (&syncer.Cmd{
+	err := (&syncer.Sync{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
 		TimeOut:   *timeout,

@@ -13,8 +13,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Cmd is struct
-type Cmd struct {
+// Sync is struct
+type Sync struct {
 	// TimeOut is timeout of performed command on one direcotory.
 	TimeOut string
 
@@ -41,7 +41,7 @@ type Cmd struct {
 }
 
 // Run is execute logic
-func (s *Cmd) Run() (err error) {
+func (s *Sync) Run() (err error) {
 	//
 	// list target directories
 	//
@@ -144,7 +144,7 @@ func (s *Cmd) Run() (err error) {
 }
 
 // execCmd is execute git command
-func (s *Cmd) execCmd(ctx context.Context, d string) (err error) {
+func (s *Sync) execCmd(ctx context.Context, d string) (err error) {
 	absPath, err := filepath.Abs(d)
 	if err != nil {
 		err = errors.Wrapf(err, "get.abs.failed: %s", d)
