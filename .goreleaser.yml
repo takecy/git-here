@@ -5,7 +5,7 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - main: ./cmd/main.go
+  - main: ./gih/main.go
     binary: gih
     ldflags: 
       - -s -w

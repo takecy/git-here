@@ -45,6 +45,7 @@ $ tree
 ```shell
 $ go install github.com/takecy/git-here/gih@latest
 ```
+
 ### via Binary  
 Download from [Release Page](https://github.com/takecy/git-here/releases) for your environment.  
 and copy binary to your `$PATH`.
@@ -83,7 +84,7 @@ It is to simplify development. You can start right away just by cloning.
 ```
 $ git clone git@github.com:takecy/git-here.git
 $ cd git-here
-$ DEBUG=* go run cmd/main.go version
+$ DEBUG=* go run gih/main.go version
 ```
 
 ### Testing
