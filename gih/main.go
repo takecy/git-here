@@ -18,7 +18,7 @@ var (
 	commit    = "unset"
 	date      = "unset"
 	builtBy   = "unset"
-	goversion = "1.17.8"
+	goversion = "1.18.3"
 )
 
 const usage = `Run git command to all repositories in the current directory.
