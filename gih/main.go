@@ -14,11 +14,11 @@ import (
 
 // set by build
 var (
-	version   = "0.13.3"
+	version   = "0.13.4"
 	commit    = "unset"
 	date      = "unset"
 	builtBy   = "unset"
-	goversion = "1.18.3"
+	goversion = "1.19.1"
 )
 
 const usage = `Run git command to all repositories in the current directory.
