@@ -2,6 +2,7 @@ package printer
 
 import (
 	"io"
+	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -78,8 +79,10 @@ func (p *Printer) PrintCmd(cmd string, options []string) {
 		Ops string
 	}
 	t := template.Must(template.New("item").Funcs(helpers).Parse(cmdTmpl))
-	t.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")})
-	return
+	err := t.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // PrintMsg prints message
@@ -88,8 +91,10 @@ func (p *Printer) PrintMsg(msg string) {
 		Msg string
 	}
 	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
-	t.Execute(p.writer, message{Msg: msg})
-	return
+	err := t.Execute(p.writer, message{Msg: msg})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // PrintMsgErr prints error message
@@ -98,8 +103,10 @@ func (p *Printer) PrintMsgErr(msg string) {
 		Msg string
 	}
 	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgErrTmpl))
-	t.Execute(p.writer, message{Msg: msg})
-	return
+	err := t.Execute(p.writer, message{Msg: msg})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // PrintRepoErr prints error message
@@ -109,21 +116,27 @@ func (p *Printer) PrintRepoErr(msg string, repos []string) {
 		Repos []string
 	}
 	t := template.Must(template.New("msg").Funcs(helpers).Parse(repoErrTmpl))
-	t.Execute(p.writer, message{Msg: msg, Repos: repos})
-	return
+	err := t.Execute(p.writer, message{Msg: msg, Repos: repos})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // Print prints result
 func (p *Printer) Print(res Result) {
-	t(true).Execute(p.writer, res)
-	return
+	err := t(true).Execute(p.writer, res)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // Error prints error
 func (p *Printer) Error(res Result) {
 	res.Msg = res.Err.Error()
-	t(false).Execute(p.errWriter, res)
-	return
+	err := t(false).Execute(p.errWriter, res)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func t(isSuccess bool) *template.Template {
