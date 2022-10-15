@@ -1,13 +1,13 @@
 package syncer
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
 // ListDirs returns target directories
 func ListDirs() (dirs []string, err error) {
-	files, err := ioutil.ReadDir("./")
+	files, err := os.ReadDir("./")
 	if err != nil {
 		return
 	}
@@ -24,7 +24,7 @@ func ListDirs() (dirs []string, err error) {
 
 // IsRepo returns check result, the directory whether git repository
 func IsRepo(dirName string) bool {
-	files, err := ioutil.ReadDir(dirName)
+	files, err := os.ReadDir(dirName)
 	if err != nil {
 		return false
 	}

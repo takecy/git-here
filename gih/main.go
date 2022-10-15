@@ -6,18 +6,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/blang/semver"
-	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	"github.com/takecy/git-here/printer"
 	"github.com/takecy/git-here/syncer"
 )
 
 // set by build
 var (
-	version   = "0.13.4"
-	commit    = "unset"
-	date      = "unset"
-	builtBy   = "unset"
+	version   = "0.13.11"
 	goversion = "1.19.1"
 )
 
@@ -60,7 +55,6 @@ func main() {
 	}
 
 	if flag.Arg(0) == "version" {
-		// checkUpdate()
 		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
 		fmt.Fprintf(os.Stdout, "go version %s\n", goversion)
 		return
@@ -89,61 +83,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func checkUpdate() {
-	fmt.Printf("checking latest version...\n")
-	repo := "takecy/git-here"
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{
-		APIToken: "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", // read only of public info
-	})
-	if err != nil {
-		fmt.Printf("Check update failed: %v\n", err)
-		return
-	}
-
-	latest, found, err := updater.DetectLatest(repo)
-	if err != nil {
-		fmt.Printf("Binary update failed: %v\n", err)
-		return
-	}
-
-	fmt.Printf("the latest version is %s (%s)\n", latest.Version, latest.PublishedAt.Format("2006-01-02"))
-
-	v, err := semver.Parse(version)
-	if err != nil {
-		fmt.Printf("err: parse version failed: %v\n", err)
-		return
-	}
-	if !found || latest.Version.LTE(v) {
-		fmt.Printf("Current version is the latest:\nversion: %s\nsha: %s\ndate:%s\n", version, commit, date)
-		return
-	}
-
-	fmt.Printf("Do you want to update to [%s] ? (y/n): \n", latest.Version)
-	input := ""
-	_, err = fmt.Scanln(&input)
-	if err != nil {
-		fmt.Printf("Invalid input\n")
-		return
-	}
-
-	switch input {
-	case "y":
-		fmt.Printf("updating....\n")
-	// next
-	case "n":
-		fmt.Printf("not update.\n")
-		return
-	default:
-		fmt.Printf("invalid input.\n")
-		return
-	}
-
-	updated, err := updater.UpdateSelf(v, repo)
-	if err != nil {
-		fmt.Printf("Error occurred while updating binary: %v\n", err)
-		return
-	}
-	fmt.Printf("Successfully updated to version: %s\n", updated.Version)
 }

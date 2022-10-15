@@ -80,7 +80,7 @@ func (s *Sync) Run() (err error) {
 	}
 
 	if len(repos) == 0 {
-		s.Writer.PrintMsg(fmt.Sprintf("No target repositories."))
+		s.Writer.PrintMsg("No target repositories.")
 		return
 	}
 
@@ -127,11 +127,9 @@ func (s *Sync) Run() (err error) {
 
 	go func() {
 		for {
-			select {
-			case <-ctx.Done():
-				s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) [%v]----", time.Now().Sub(start).String(), ctx.Err()))
-				os.Exit(1)
-			}
+			<-ctx.Done()
+			s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) [%v]----", time.Since(start).String(), ctx.Err()))
+			os.Exit(1)
 		}
 	}()
 
@@ -139,7 +137,7 @@ func (s *Sync) Run() (err error) {
 		s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %v", err))
 	}
 
-	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Now().Sub(start)))
+	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Since(start).Round(time.Millisecond)))
 	return
 }
 
