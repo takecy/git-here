@@ -152,7 +152,7 @@ func (s *Sync) execCmd(ctx context.Context, d string) (err error) {
 
 	msg, errMsg, err := s.Gitter.Git(s.Command, absPath, s.Options...)
 	if err != nil {
-		s.Writer.Error(printer.Result{Repo: absPath, Err: errors.Wrapf(err, errMsg)})
+		s.Writer.Error(printer.Result{Repo: absPath, Err: errors.Wrapf(err, "%s", errMsg)})
 	} else {
 		s.Writer.Print(printer.Result{Repo: absPath, Msg: msg})
 	}

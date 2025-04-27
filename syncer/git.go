@@ -25,8 +25,14 @@ func NewGitter(writer, errWriter io.Writer) *Gitter {
 // IsExist is check git command
 func (*Gitter) IsExist() error {
 	s, err := exec.LookPath("git")
-	fmt.Fprintf(os.Stdout, "%s", s)
-	return err
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(os.Stdout, "%s", s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Git is execute git command

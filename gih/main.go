@@ -55,8 +55,14 @@ func main() {
 	}
 
 	if flag.Arg(0) == "version" {
-		fmt.Fprintf(os.Stdout, "git-here %s\n", version)
-		fmt.Fprintf(os.Stdout, "go version %s\n", goversion)
+		_, err := fmt.Fprintf(os.Stdout, "git-here %s\n", version)
+		if err != nil {
+			panic(err)
+		}
+		_, err = fmt.Fprintf(os.Stdout, "go version %s\n", goversion)
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 
