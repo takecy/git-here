@@ -15,7 +15,7 @@ import (
 
 // Sync is struct
 type Sync struct {
-	// TimeOut is timeout of performed command on one direcotory.
+	// TimeOut is timeout of performed command on one directory.
 	TimeOut string
 
 	// TargetDir is target directory regex pattern.
@@ -24,19 +24,19 @@ type Sync struct {
 	// IgnoreDir is ignore sync target directory regex pattern.
 	IgnoreDir string
 
-	// Command is it command.
+	// Command is the git subcommand to execute.
 	Command string
 
 	// Options is git command options.
 	Options []string
 
-	// Writer is instance
+	// Writer is the printer instance for output formatting.
 	Writer *printer.Printer
 
 	// ConNum is concurrency level
 	ConNum int
 
-	// Gitter is instance
+	// Gitter is the git command executor instance.
 	Gitter *Gitter
 }
 
@@ -60,20 +60,35 @@ func (s *Sync) Run() (err error) {
 	s.Writer.PrintCmd(s.Command, s.Options)
 
 	//
+	// compile regex patterns for performance
+	//
+	var ignoreRegex, targetRegex *regexp.Regexp
+
+	if s.IgnoreDir != "" {
+		ignoreRegex, err = regexp.Compile(s.IgnoreDir)
+		if err != nil {
+			return errors.Wrapf(err, "invalid ignore directory regex pattern: %s", s.IgnoreDir)
+		}
+	}
+
+	if s.TargetDir != "" {
+		targetRegex, err = regexp.Compile(s.TargetDir)
+		if err != nil {
+			return errors.Wrapf(err, "invalid target directory regex pattern: %s", s.TargetDir)
+		}
+	}
+
+	//
 	// retrieve target repos
 	//
 	repos := make([]string, 0, len(dirs))
 	for _, d := range dirs {
-		if s.IgnoreDir != "" {
-			if isMatch, _ := regexp.MatchString(s.IgnoreDir, d); isMatch {
-				continue
-			}
+		if ignoreRegex != nil && ignoreRegex.MatchString(d) {
+			continue
 		}
 
-		if s.TargetDir != "" {
-			if isMatch, _ := regexp.MatchString(s.TargetDir, d); !isMatch {
-				continue
-			}
+		if targetRegex != nil && !targetRegex.MatchString(d) {
+			continue
 		}
 
 		repos = append(repos, d)
@@ -125,16 +140,22 @@ func (s *Sync) Run() (err error) {
 		})
 	}
 
+	// Handle timeout in a separate goroutine
+	done := make(chan struct{})
 	go func() {
-		for {
-			<-ctx.Done()
-			s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) [%v]----", time.Since(start).String(), ctx.Err()))
-			os.Exit(1)
+		defer close(done)
+		if err := eg.Wait(); err != nil {
+			s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %v", err))
 		}
 	}()
 
-	if err := eg.Wait(); err != nil {
-		s.Writer.PrintMsgErr(fmt.Sprintf("Error.exists: %v", err))
+	select {
+	case <-done:
+		// All goroutines completed successfully
+	case <-ctx.Done():
+		s.Writer.PrintMsgErr(fmt.Sprintf("---- Timeouted (%v) ----", time.Since(start).String()))
+		// returns no error
+		return
 	}
 
 	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Since(start).Round(time.Millisecond)))
