@@ -29,7 +29,7 @@ const errTmpl = `{{.Repo }}
   {{.Msg | red}}
 `
 
-const cmdTmpl = `Git commad is
+const cmdTmpl = `Git command is
   {{.Cmd | green}} {{.Ops | green}}
 `
 

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 )
 
-// Gitter is strcut
+// Gitter is struct
 type Gitter struct {
 	writer    io.Writer
 	errWriter io.Writer
