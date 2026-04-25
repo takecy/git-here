@@ -2,7 +2,7 @@
 
 ![unittest](https://github.com/takecy/git-here/workflows/unittest/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/takecy/git-here)](https://goreportcard.com/report/github.com/takecy/git-here)
-![Go Version](https://img.shields.io/badge/golang-1.24+-blue.svg?style=flat-square)
+![Go Version](https://img.shields.io/badge/golang-1.26+-blue.svg?style=flat-square)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/takecy/git-here)
 
 **Efficiently run git commands across multiple repositories in parallel**
@@ -252,7 +252,7 @@ Any valid git command can be used:
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.26 or later
 
 ### Setup
 
