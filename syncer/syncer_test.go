@@ -187,3 +187,37 @@ func TestSync_FilterRepos(t *testing.T) {
 		is.True(err != nil)
 	})
 }
+
+func TestRunSummary_HasFailures(t *testing.T) {
+	t.Run("clean run returns false", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		s := &RunSummary{Succeeded: 5, Failed: 0, TimedOut: 0}
+		is.Equal(s.HasFailures(), false)
+	})
+
+	t.Run("any failure returns true", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		s := &RunSummary{Succeeded: 4, Failed: 1, TimedOut: 0}
+		is.Equal(s.HasFailures(), true)
+	})
+
+	t.Run("any timeout returns true", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		s := &RunSummary{Succeeded: 4, Failed: 0, TimedOut: 1}
+		is.Equal(s.HasFailures(), true)
+	})
+
+	t.Run("empty summary returns false (no work done)", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		s := &RunSummary{}
+		is.Equal(s.HasFailures(), false)
+	})
+}

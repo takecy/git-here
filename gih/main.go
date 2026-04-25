@@ -75,7 +75,7 @@ func main() {
 	writer := os.Stdout
 	errWriter := os.Stderr
 
-	err := (&syncer.Sync{
+	_, err := (&syncer.Sync{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
 		TimeOut:   *timeout,
@@ -87,6 +87,7 @@ func main() {
 	}).Run()
 
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }

@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -14,6 +13,20 @@ import (
 	"github.com/takecy/git-here/printer"
 	"golang.org/x/sync/errgroup"
 )
+
+// RunSummary reports per-category counts after a Sync.Run completes
+// successfully (i.e. the run itself was not aborted by a setup error).
+type RunSummary struct {
+	Succeeded int
+	Failed    int
+	TimedOut  int
+}
+
+// HasFailures reports whether any repository failed or timed out.
+// Used by callers to decide between exit code 0 (clean) and 2 (partial).
+func (s *RunSummary) HasFailures() bool {
+	return s.Failed > 0 || s.TimedOut > 0
+}
 
 // Sync is struct
 type Sync struct {
@@ -75,16 +88,30 @@ func (s *runStats) addTimedOut(r string) {
 	s.timedOut = append(s.timedOut, r)
 }
 
-// Run is execute logic
-func (s *Sync) Run() (err error) {
+// summary builds a public RunSummary snapshot of the current stats.
+func (s *runStats) summary() *RunSummary {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return &RunSummary{
+		Succeeded: len(s.succeeded),
+		Failed:    len(s.failed),
+		TimedOut:  len(s.timedOut),
+	}
+}
+
+// Run discovers repositories, applies filters, and executes the configured
+// git command across the matching set. It returns a summary of per-repo
+// outcomes, or an error for setup failures (no repositories, invalid regex,
+// invalid timeout, etc.). The returned summary is non-nil exactly when err
+// is nil; callers can inspect summary.HasFailures() to decide between a
+// clean run (exit 0) and a partial-failure run (exit 2).
+func (s *Sync) Run() (*RunSummary, error) {
 	dirs, err := ListDirs()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return nil, errors.Wrap(err, "list directories")
 	}
 	if len(dirs) == 0 {
-		fmt.Fprintf(os.Stderr, "%s\n", "There is no repositories...")
-		os.Exit(1)
+		return nil, errors.New("no git repositories found in current directory")
 	}
 
 	fmt.Printf("repositories are found: (%d)\n", len(dirs))
@@ -92,23 +119,23 @@ func (s *Sync) Run() (err error) {
 
 	repos, err := s.filterRepos(dirs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(repos) == 0 {
+		// Filter narrowed down to zero — no work, but not an error.
 		s.Writer.PrintMsg("No target repositories.")
-		return
+		return &RunSummary{}, nil
 	}
 	s.Writer.PrintMsg(fmt.Sprintf("target repositories: (%d)", len(repos)))
 
 	perRepoTimeout, err := time.ParseDuration(s.TimeOut)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", "invalid timeout value.")
-		os.Exit(1)
+		return nil, errors.Wrapf(err, "invalid timeout value: %s", s.TimeOut)
 	}
 
 	stats := s.execute(context.Background(), repos, perRepoTimeout)
 	s.printSummary(stats)
-	return
+	return stats.summary(), nil
 }
 
 // filterRepos applies the target/ignore regex patterns to the discovered
