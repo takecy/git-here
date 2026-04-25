@@ -2,11 +2,18 @@ package syncer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 )
+
+// Executor abstracts git command execution. Defined as an interface so that
+// callers can substitute fakes in tests without spawning real processes.
+type Executor interface {
+	Git(ctx context.Context, command, dir string, args ...string) (msg, errMsg string, err error)
+}
 
 // Gitter is struct
 type Gitter struct {
@@ -35,13 +42,14 @@ func (*Gitter) IsExist() error {
 	return nil
 }
 
-// Git is execute git command
-func (g *Gitter) Git(command, dir string, args ...string) (msg, errMsg string, err error) {
+// Git is execute git command. The given context is forwarded to exec.CommandContext
+// so that cancellation (e.g. per-repo timeout) terminates the underlying process.
+func (g *Gitter) Git(ctx context.Context, command, dir string, args ...string) (msg, errMsg string, err error) {
 	wr := new(bytes.Buffer)
 	errWr := new(bytes.Buffer)
 
 	cmdArgs := append([]string{command}, args...)
-	cmd := exec.Command("git", cmdArgs...)
+	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
 	cmd.Dir = dir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = wr
