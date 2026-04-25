@@ -30,3 +30,6 @@ gs_*
 
 dist
 gih_dev
+
+.worktrees/
+tasks/
