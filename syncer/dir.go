@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -22,18 +23,11 @@ func ListDirs() (dirs []string, err error) {
 	return
 }
 
-// IsRepo returns check result, the directory whether git repository
+// IsRepo reports whether dirName contains a `.git` entry. It accepts both a
+// regular repository (where `.git` is a directory) and a git worktree
+// (where `.git` is a file pointing at the main repo's git directory),
+// because exec'd git commands work in either layout.
 func IsRepo(dirName string) bool {
-	files, err := os.ReadDir(dirName)
-	if err != nil {
-		return false
-	}
-
-	for _, f := range files {
-		if f.Name() == ".git" {
-			return true
-		}
-	}
-
-	return false
+	_, err := os.Stat(filepath.Join(dirName, ".git"))
+	return err == nil
 }
