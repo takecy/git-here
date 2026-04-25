@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/fatih/color"
@@ -44,8 +45,24 @@ const repoErrTmpl = `
   {{ range .Repos }}- {{ . }}
   {{ end }}`
 
+// Templates are parsed once at package init. text/template.Template.Execute is
+// safe for concurrent use, so the same parsed template can be shared across
+// goroutines without re-parsing on every call.
+var (
+	successTpl = template.Must(template.New("success").Funcs(helpers).Parse(successTmpl))
+	errTpl     = template.Must(template.New("err").Funcs(helpers).Parse(errTmpl))
+	cmdTpl     = template.Must(template.New("cmd").Funcs(helpers).Parse(cmdTmpl))
+	msgTpl     = template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
+	msgErrTpl  = template.Must(template.New("msgErr").Funcs(helpers).Parse(msgErrTmpl))
+	repoErrTpl = template.Must(template.New("repoErr").Funcs(helpers).Parse(repoErrTmpl))
+)
+
 // Printer is struct
 type Printer struct {
+	// mu serialises template.Execute calls so that the multiple Write calls
+	// emitted per Execute don't interleave across goroutines, even when
+	// writer and errWriter end up at the same TTY.
+	mu        sync.Mutex
 	writer    io.Writer
 	errWriter io.Writer
 }
@@ -78,9 +95,9 @@ func (p *Printer) PrintCmd(cmd string, options []string) {
 		Cmd string
 		Ops string
 	}
-	t := template.Must(template.New("item").Funcs(helpers).Parse(cmdTmpl))
-	err := t.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")})
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := cmdTpl.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")}); err != nil {
 		log.Println(err)
 	}
 }
@@ -90,9 +107,9 @@ func (p *Printer) PrintMsg(msg string) {
 	type message struct {
 		Msg string
 	}
-	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
-	err := t.Execute(p.writer, message{Msg: msg})
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := msgTpl.Execute(p.writer, message{Msg: msg}); err != nil {
 		log.Println(err)
 	}
 }
@@ -102,9 +119,9 @@ func (p *Printer) PrintMsgErr(msg string) {
 	type message struct {
 		Msg string
 	}
-	t := template.Must(template.New("msg").Funcs(helpers).Parse(msgErrTmpl))
-	err := t.Execute(p.writer, message{Msg: msg})
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := msgErrTpl.Execute(p.writer, message{Msg: msg}); err != nil {
 		log.Println(err)
 	}
 }
@@ -115,17 +132,18 @@ func (p *Printer) PrintRepoErr(msg string, repos []string) {
 		Msg   string
 		Repos []string
 	}
-	t := template.Must(template.New("msg").Funcs(helpers).Parse(repoErrTmpl))
-	err := t.Execute(p.writer, message{Msg: msg, Repos: repos})
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := repoErrTpl.Execute(p.writer, message{Msg: msg, Repos: repos}); err != nil {
 		log.Println(err)
 	}
 }
 
 // Print prints result
 func (p *Printer) Print(res Result) {
-	err := t(true).Execute(p.writer, res)
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := successTpl.Execute(p.writer, res); err != nil {
 		log.Println(err)
 	}
 }
@@ -133,15 +151,9 @@ func (p *Printer) Print(res Result) {
 // Error prints error
 func (p *Printer) Error(res Result) {
 	res.Msg = res.Err.Error()
-	err := t(false).Execute(p.errWriter, res)
-	if err != nil {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if err := errTpl.Execute(p.errWriter, res); err != nil {
 		log.Println(err)
 	}
-}
-
-func t(isSuccess bool) *template.Template {
-	if isSuccess {
-		return template.Must(template.New("item").Funcs(helpers).Parse(successTmpl))
-	}
-	return template.Must(template.New("item").Funcs(helpers).Parse(errTmpl))
 }

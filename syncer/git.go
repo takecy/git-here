@@ -2,11 +2,25 @@ package syncer
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"io"
 	"os"
 	"os/exec"
 )
+
+// Executor abstracts git command execution. Defined as an interface so that
+// callers can substitute fakes in tests without spawning real processes.
+type Executor interface {
+	Git(ctx context.Context, command, dir string, args ...string) (msg, errMsg string, err error)
+}
+
+// ExistGit reports whether the `git` executable is available on PATH.
+// It returns the error from exec.LookPath when not found, and nil otherwise.
+// Unlike the previous Gitter.IsExist, this function has no side effects.
+func ExistGit() error {
+	_, err := exec.LookPath("git")
+	return err
+}
 
 // Gitter is struct
 type Gitter struct {
@@ -22,26 +36,14 @@ func NewGitter(writer, errWriter io.Writer) *Gitter {
 	}
 }
 
-// IsExist is check git command
-func (*Gitter) IsExist() error {
-	s, err := exec.LookPath("git")
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(os.Stdout, "%s", s)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Git is execute git command
-func (g *Gitter) Git(command, dir string, args ...string) (msg, errMsg string, err error) {
+// Git is execute git command. The given context is forwarded to exec.CommandContext
+// so that cancellation (e.g. per-repo timeout) terminates the underlying process.
+func (g *Gitter) Git(ctx context.Context, command, dir string, args ...string) (msg, errMsg string, err error) {
 	wr := new(bytes.Buffer)
 	errWr := new(bytes.Buffer)
 
 	cmdArgs := append([]string{command}, args...)
-	cmd := exec.Command("git", cmdArgs...)
+	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
 	cmd.Dir = dir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = wr

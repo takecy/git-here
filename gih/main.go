@@ -12,7 +12,7 @@ import (
 
 // set by build
 var (
-	version   = "0.15.0"
+	version   = "0.16.0"
 	goversion = "1.26.2"
 )
 
@@ -75,7 +75,7 @@ func main() {
 	writer := os.Stdout
 	errWriter := os.Stderr
 
-	err := (&syncer.Sync{
+	summary, err := (&syncer.Sync{
 		TargetDir: *targetDir,
 		IgnoreDir: *ignoreDir,
 		TimeOut:   *timeout,
@@ -86,7 +86,15 @@ func main() {
 		Writer:    printer.NewPrinter(writer, errWriter),
 	}).Run()
 
+	// Map run outcome to exit codes per README spec:
+	//   0 - all operations completed successfully
+	//   1 - setup error (invalid args, no repos, invalid regex/timeout)
+	//   2 - some repositories failed or timed out
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if summary != nil && summary.HasFailures() {
+		os.Exit(2)
 	}
 }
