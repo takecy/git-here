@@ -12,7 +12,7 @@ import (
 
 // set by build
 var (
-	version   = "0.15.0"
+	version   = "0.16.0"
 	goversion = "1.26.2"
 )
 
