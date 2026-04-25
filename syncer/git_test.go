@@ -10,10 +10,7 @@ import (
 
 func TestIsExist(t *testing.T) {
 	is := is.New(t)
-
-	gi := NewGitter(os.Stdout, os.Stderr)
-	err := gi.IsExist()
-	is.NoErr(err)
+	is.NoErr(ExistGit())
 }
 
 func TestFetch(t *testing.T) {

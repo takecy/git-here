@@ -3,7 +3,6 @@ package syncer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -13,6 +12,14 @@ import (
 // callers can substitute fakes in tests without spawning real processes.
 type Executor interface {
 	Git(ctx context.Context, command, dir string, args ...string) (msg, errMsg string, err error)
+}
+
+// ExistGit reports whether the `git` executable is available on PATH.
+// It returns the error from exec.LookPath when not found, and nil otherwise.
+// Unlike the previous Gitter.IsExist, this function has no side effects.
+func ExistGit() error {
+	_, err := exec.LookPath("git")
+	return err
 }
 
 // Gitter is struct
@@ -27,19 +34,6 @@ func NewGitter(writer, errWriter io.Writer) *Gitter {
 		writer:    writer,
 		errWriter: errWriter,
 	}
-}
-
-// IsExist is check git command
-func (*Gitter) IsExist() error {
-	s, err := exec.LookPath("git")
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(os.Stdout, "%s", s)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Git is execute git command. The given context is forwarded to exec.CommandContext
