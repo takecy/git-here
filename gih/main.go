@@ -12,8 +12,8 @@ import (
 
 // set by build
 var (
-	version   = "0.14.4"
-	goversion = "1.24.5"
+	version   = "0.15.0"
+	goversion = "1.26.2"
 )
 
 const usage = `Run git command to all repositories in the current directory.
