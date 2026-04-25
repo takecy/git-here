@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,21 +12,6 @@ import (
 	"github.com/matryer/is"
 	"github.com/takecy/git-here/printer"
 )
-
-// syncWriter serialises writes from multiple goroutines so that tests using
-// the real Printer don't trip the race detector. Without this wrapper, the
-// concurrent template.Execute calls inside Printer would race on a shared
-// io.Writer (Printer itself is not yet mutex-protected).
-type syncWriter struct {
-	mu sync.Mutex
-	w  io.Writer
-}
-
-func (s *syncWriter) Write(p []byte) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.w.Write(p)
-}
 
 type execFn func(ctx context.Context, command, dir string, args ...string) (string, string, error)
 
@@ -38,12 +22,11 @@ func (f *fakeExecutor) Git(ctx context.Context, command, dir string, args ...str
 }
 
 func newSyncWithFake(fn execFn, conNum int) *Sync {
-	sw := &syncWriter{w: io.Discard}
 	return &Sync{
 		Command: "status",
 		ConNum:  conNum,
 		Gitter:  &fakeExecutor{fn: fn},
-		Writer:  printer.NewPrinter(sw, sw),
+		Writer:  printer.NewPrinter(io.Discard, io.Discard),
 	}
 }
 
