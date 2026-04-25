@@ -6,7 +6,10 @@ import (
 	"strings"
 )
 
-// ListDirs returns target directories
+// ListDirs returns the names of direct child directories that look like git
+// repositories, skipping hidden entries (those whose name starts with ".").
+// The order matters for efficiency: HasPrefix is a cheap string check, so we
+// filter out hidden directories before paying the os.Stat cost in IsRepo.
 func ListDirs() (dirs []string, err error) {
 	files, err := os.ReadDir("./")
 	if err != nil {
@@ -15,11 +18,17 @@ func ListDirs() (dirs []string, err error) {
 
 	dirs = make([]string, 0, len(files))
 	for _, f := range files {
-		if f.IsDir() && IsRepo(f.Name()) && strings.Index(f.Name(), ".") != 0 {
-			dirs = append(dirs, f.Name())
+		if !f.IsDir() {
+			continue
 		}
+		if strings.HasPrefix(f.Name(), ".") {
+			continue
+		}
+		if !IsRepo(f.Name()) {
+			continue
+		}
+		dirs = append(dirs, f.Name())
 	}
-
 	return
 }
 
