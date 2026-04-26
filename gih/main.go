@@ -12,8 +12,7 @@ import (
 
 // set by build
 var (
-	version   = "0.16.0"
-	goversion = "1.26.2"
+	version = "0.16.0"
 )
 
 const usage = `Run git command to all repositories in the current directory.
@@ -54,15 +53,9 @@ func main() {
 		return
 	}
 
-	if flag.Arg(0) == "version" {
-		_, err := fmt.Fprintf(os.Stdout, "git-here %s\n", version)
-		if err != nil {
-			panic(err)
-		}
-		_, err = fmt.Fprintf(os.Stdout, "go version %s\n", goversion)
-		if err != nil {
-			panic(err)
-		}
+	switch flag.Arg(0) {
+	case "version":
+		printVersion()
 		return
 	}
 
@@ -70,7 +63,7 @@ func main() {
 		*conNum = runtime.NumCPU()
 	}
 
-	fmt.Printf("args: targetDir: %s ignoreDir: %s  concurrency: %d  timeout: %v\n", *targetDir, *ignoreDir, *conNum, *timeout)
+	fmt.Printf("args: targetDir: %s ignoreDir: %s concurrency: %d timeout: %v\n", *targetDir, *ignoreDir, *conNum, *timeout)
 
 	writer := os.Stdout
 	errWriter := os.Stderr
@@ -96,5 +89,16 @@ func main() {
 	}
 	if summary != nil && summary.HasFailures() {
 		os.Exit(2)
+	}
+}
+
+func printVersion() {
+	_, err := fmt.Fprintf(os.Stdout, "git-here %s\n", version)
+	if err != nil {
+		panic(err)
+	}
+	_, err = fmt.Fprintf(os.Stdout, "go version %s\n", runtime.Version())
+	if err != nil {
+		panic(err)
 	}
 }
