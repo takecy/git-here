@@ -17,6 +17,9 @@ func TestExistGit_NoStdoutSideEffect(t *testing.T) {
 
 	r, w, err := os.Pipe()
 	is.NoErr(err)
+	// io.ReadAll reaches EOF but the read-end fd still needs closing.
+	// Close error is irrelevant in tests — we only care about fd release.
+	defer func() { _ = r.Close() }()
 	orig := os.Stdout
 	os.Stdout = w
 	defer func() { os.Stdout = orig }()
