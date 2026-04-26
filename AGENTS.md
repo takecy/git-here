@@ -25,4 +25,4 @@ This repository uses Go’s `testing` package plus `github.com/matryer/is`. Writ
 Recent history follows Conventional Commits, for example `feat(gih): ...`, `refactor(syncer): ...`, and `fix(printer): ...`. Keep commit titles in English and scoped when helpful. PRs should follow `.github/PULL_REQUEST_TEMPLATE.md` with `## Issue` and `## Overview`, link the related issue, and describe behavioral changes briefly in Japanese. Include tests for functional changes and update `README.md` when CLI behavior changes.
 
 ## Worktree Workflow
-Do not work directly on `master`. Start each non-trivial change from a dedicated branch and worktree under `.worktrees/`, for example `git worktree add .worktrees/feat-x -b feat/x`.
+Do not work directly on the default branch (currently `master`). Start each non-trivial change from a dedicated branch and worktree under `.worktrees/`, for example `git worktree add .worktrees/feat-x -b feat/x`.
