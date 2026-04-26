@@ -55,18 +55,14 @@ type Sync struct {
 	Gitter Executor
 }
 
-// failedRepo carries the repository path together with the error that caused
-// the failure so that it can be reported in the final summary.
-type failedRepo struct {
-	Repo string
-	Err  error
-}
-
 // runStats accumulates per-repository outcomes safely from concurrent goroutines.
+// Each bucket is just a list of repository paths — the per-repo error message
+// is already streamed to stderr at execution time via PrintMsgErr, so there is
+// no need to retain it here.
 type runStats struct {
 	mu        sync.Mutex
 	succeeded []string
-	failed    []failedRepo
+	failed    []string
 	timedOut  []string
 }
 
@@ -76,10 +72,10 @@ func (s *runStats) addSuccess(r string) {
 	s.succeeded = append(s.succeeded, r)
 }
 
-func (s *runStats) addFailed(r string, e error) {
+func (s *runStats) addFailed(r string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.failed = append(s.failed, failedRepo{Repo: r, Err: e})
+	s.failed = append(s.failed, r)
 }
 
 func (s *runStats) addTimedOut(r string) {
@@ -198,12 +194,12 @@ func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout ti
 			switch {
 			case err == nil:
 				stats.addSuccess(r)
-				s.Writer.PrintMsg(fmt.Sprintf("Success: %s\n", r))
+				s.Writer.PrintMsg(fmt.Sprintf("Success: %s", r))
 			case errors.Is(ctx.Err(), context.DeadlineExceeded):
 				stats.addTimedOut(r)
 				s.Writer.PrintMsgErr(fmt.Sprintf("Timeout: %s", r))
 			default:
-				stats.addFailed(r, err)
+				stats.addFailed(r)
 				s.Writer.PrintMsgErr(fmt.Sprintf("Failed: %s\n%v", r, err))
 			}
 
@@ -245,11 +241,7 @@ func (s *Sync) printSummary(stats *runStats) {
 	))
 
 	if len(stats.failed) > 0 {
-		repos := make([]string, len(stats.failed))
-		for i, f := range stats.failed {
-			repos[i] = f.Repo
-		}
-		s.Writer.PrintRepoErr("Failed repositories:", repos)
+		s.Writer.PrintRepoErr("Failed repositories:", stats.failed)
 	}
 	if len(stats.timedOut) > 0 {
 		s.Writer.PrintRepoErr("Timed out repositories:", stats.timedOut)

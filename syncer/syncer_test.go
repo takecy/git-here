@@ -59,7 +59,7 @@ func TestSync_Execute(t *testing.T) {
 		stats := s.execute(context.Background(), []string{"a", "b", "c"}, time.Second)
 		is.Equal(len(stats.succeeded), 2)
 		is.Equal(len(stats.failed), 1)
-		is.Equal(filepath.Base(stats.failed[0].Repo), "b")
+		is.Equal(filepath.Base(stats.failed[0]), "b")
 	})
 
 	t.Run("timeout is classified separately", func(t *testing.T) {

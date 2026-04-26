@@ -114,19 +114,21 @@ func (p *Printer) PrintMsg(msg string) {
 	}
 }
 
-// PrintMsgErr prints error message
+// PrintMsgErr prints an error message to errWriter so that callers can
+// redirect stderr separately from stdout (consistent with Printer.Error).
 func (p *Printer) PrintMsgErr(msg string) {
 	type message struct {
 		Msg string
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := msgErrTpl.Execute(p.writer, message{Msg: msg}); err != nil {
+	if err := msgErrTpl.Execute(p.errWriter, message{Msg: msg}); err != nil {
 		log.Println(err)
 	}
 }
 
-// PrintRepoErr prints error message
+// PrintRepoErr prints a header plus a list of repository paths to errWriter
+// (matching the stderr semantics of PrintMsgErr / Error).
 func (p *Printer) PrintRepoErr(msg string, repos []string) {
 	type message struct {
 		Msg   string
@@ -134,7 +136,7 @@ func (p *Printer) PrintRepoErr(msg string, repos []string) {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := repoErrTpl.Execute(p.writer, message{Msg: msg, Repos: repos}); err != nil {
+	if err := repoErrTpl.Execute(p.errWriter, message{Msg: msg, Repos: repos}); err != nil {
 		log.Println(err)
 	}
 }
