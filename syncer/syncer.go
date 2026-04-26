@@ -194,7 +194,7 @@ func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout ti
 			switch {
 			case err == nil:
 				stats.addSuccess(r)
-				s.Writer.PrintMsg(fmt.Sprintf("Success: %s\n", r))
+				s.Writer.PrintMsg(fmt.Sprintf("Success: %s", r))
 			case errors.Is(ctx.Err(), context.DeadlineExceeded):
 				stats.addTimedOut(r)
 				s.Writer.PrintMsgErr(fmt.Sprintf("Timeout: %s", r))
