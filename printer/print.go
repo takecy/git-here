@@ -25,7 +25,10 @@ const (
 // Outcome carries every field needed to render both the streaming
 // "completed" line and the final summary table row for a single repository.
 type Outcome struct {
-	// Repo is the absolute path. Used for failure detail dump.
+	// Repo is the absolute path of the repository. Retained on the struct
+	// so callers (e.g. syncer.runStats) can key per-status buckets by
+	// stable absolute path even after the streaming line / summary row
+	// have been rendered with the shortened Display.
 	Repo string
 
 	// Display is the shortened display name (e.g. "dxe-ai/agent").

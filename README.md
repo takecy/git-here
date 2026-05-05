@@ -23,6 +23,30 @@ gih pull  # Done! All repositories updated in parallel
 It is just a tool to do this. It does nothing else.  
 I created it because I was tired of managing dozens of microservice repositories for the projects I work on.
 
+### Output
+
+`gih` streams one completion line per repository as work finishes, then
+prints a bordered summary table with totals at the end:
+
+```
+==> Running pull origin master on 3 repositories
+✓ takecy/git-here                Already up to date.                      0.4s
+✗ takecy/adk-test                fatal: couldn't find remote ref master   1.2s
+✓ takecy/another-repo            Already up to date.                      0.5s
+==> Summary
++-------------------------+--------+----------+----------------------------------------+
+| Repository              | Status | Duration | Message                                |
++-------------------------+--------+----------+----------------------------------------+
+| takecy/git-here         | ✓      | 0.4s     | Already up to date.                    |
+| takecy/adk-test         | ✗      | 1.2s     | fatal: couldn't find remote ref master |
+| takecy/another-repo     | ✓      | 0.5s     | Already up to date.                    |
++-------------------------+--------+----------+----------------------------------------+
+Total: 3  Success: 2  Failed: 1  Timeout: 0  Elapsed: 1.2s
+```
+
+Failed rows are colored red and timed-out rows yellow when the output
+target is a terminal.
+
 
 ## Table of Contents
 

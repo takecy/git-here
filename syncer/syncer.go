@@ -228,7 +228,17 @@ func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout ti
 				o.Err = ctx.Err()
 			default:
 				o.Status = printer.StatusFailed
-				o.Message = firstLine(errMsg)
+				// Prefer the first line of git stderr when present; fall back
+				// to err.Error() so failures that happen before the child
+				// process can write to stderr (e.g. the repo was removed
+				// between discovery and execution, or cmd.Dir cannot be
+				// entered) still surface actionable text in the per-repo
+				// line and summary table.
+				if msg := firstLine(errMsg); msg != "" {
+					o.Message = msg
+				} else {
+					o.Message = err.Error()
+				}
 				o.Err = err
 			}
 			stats.addOutcome(o)
@@ -248,10 +258,25 @@ func displayName(p string) string {
 	p = filepath.Clean(p)
 	parent, leaf := filepath.Split(p)
 	parent = strings.TrimRight(parent, string(filepath.Separator))
-	if parent == "" || parent == "." || parent == string(filepath.Separator) {
+	// Treat empty / "." / Unix root / Windows drive root (e.g. "C:") as
+	// "no meaningful parent" so a repo directly under such a root renders
+	// as the bare leaf instead of "C:/repo".
+	if parent == "" || parent == "." || parent == string(filepath.Separator) || isDriveRoot(parent) {
 		return leaf
 	}
 	return filepath.Base(parent) + "/" + leaf
+}
+
+// isDriveRoot reports whether s looks like a Windows drive root such as
+// "C:" — i.e. a single ASCII letter followed by a colon and nothing else.
+// We intentionally don't gate on runtime.GOOS so the check stays a cheap
+// pure helper that's easy to test on any platform.
+func isDriveRoot(s string) bool {
+	if len(s) != 2 || s[1] != ':' {
+		return false
+	}
+	c := s[0]
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
 }
 
 // firstLine returns the first non-empty trimmed line of s, or "" if none.

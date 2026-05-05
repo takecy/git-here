@@ -258,4 +258,33 @@ func TestDisplayName(t *testing.T) {
 		is := is.New(t)
 		is.Equal(displayName("./agent"), "agent")
 	})
+
+	t.Run("windows drive root parent returns just the leaf", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		// On non-Windows this exercises the helper directly; on Windows
+		// `filepath.Clean("C:\\repo")` produces a parent of "C:\" that
+		// trims to "C:" — which `isDriveRoot` recognises as no
+		// meaningful parent.
+		is.Equal(isDriveRoot("C:"), true)
+		is.Equal(isDriveRoot("z:"), true)
+		is.Equal(isDriveRoot("C:\\"), false)
+		is.Equal(isDriveRoot("CC"), false)
+		is.Equal(isDriveRoot("12"), false)
+	})
+}
+
+func TestSync_Execute_FailureFallsBackToErrText(t *testing.T) {
+	t.Parallel()
+	is := is.New(t)
+
+	// Simulate a Git invocation that fails before the child process can
+	// write anything to stderr — e.g. the repository directory is missing.
+	s := newSyncWithFake(func(_ context.Context, _, _ string, _ ...string) (string, string, error) {
+		return "", "", errors.New("chdir failed: no such file or directory")
+	}, 1)
+
+	stats := s.execute(context.Background(), []string{"a"}, time.Second)
+	is.Equal(len(stats.outcomes), 1)
+	is.Equal(stats.outcomes[0].Message, "chdir failed: no such file or directory")
 }
