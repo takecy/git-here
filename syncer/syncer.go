@@ -2,11 +2,10 @@ package syncer
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -56,32 +55,29 @@ type Sync struct {
 }
 
 // runStats accumulates per-repository outcomes safely from concurrent goroutines.
-// Each bucket is just a list of repository paths — the per-repo error message
-// is already streamed to stderr at execution time via PrintMsgErr, so there is
-// no need to retain it here.
+// It retains both the ordered Outcome list (for the final summary table) and
+// the per-status path buckets (for cheap len() access used by RunSummary and
+// existing tests).
 type runStats struct {
 	mu        sync.Mutex
 	succeeded []string
 	failed    []string
 	timedOut  []string
+	outcomes  []printer.Outcome
 }
 
-func (s *runStats) addSuccess(r string) {
+func (s *runStats) addOutcome(o printer.Outcome) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.succeeded = append(s.succeeded, r)
-}
-
-func (s *runStats) addFailed(r string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.failed = append(s.failed, r)
-}
-
-func (s *runStats) addTimedOut(r string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.timedOut = append(s.timedOut, r)
+	s.outcomes = append(s.outcomes, o)
+	switch o.Status {
+	case printer.StatusSuccess:
+		s.succeeded = append(s.succeeded, o.Repo)
+	case printer.StatusFailed:
+		s.failed = append(s.failed, o.Repo)
+	case printer.StatusTimeout:
+		s.timedOut = append(s.timedOut, o.Repo)
+	}
 }
 
 // summary builds a public RunSummary snapshot of the current stats.
@@ -92,6 +88,17 @@ func (s *runStats) summary() *RunSummary {
 		Succeeded: len(s.succeeded),
 		Failed:    len(s.failed),
 		TimedOut:  len(s.timedOut),
+	}
+}
+
+// printerSummary mirrors RunSummary onto the printer-side type used by
+// PrintSummaryTable, avoiding an import cycle.
+func (s *runStats) printerSummary() printer.Summary {
+	rs := s.summary()
+	return printer.Summary{
+		Succeeded: rs.Succeeded,
+		Failed:    rs.Failed,
+		TimedOut:  rs.TimedOut,
 	}
 }
 
@@ -110,9 +117,6 @@ func (s *Sync) Run() (*RunSummary, error) {
 		return nil, errors.New("no git repositories found in current directory")
 	}
 
-	fmt.Printf("repositories are found: (%d)\n", len(dirs))
-	s.Writer.PrintCmd(s.Command, s.Options)
-
 	repos, err := s.filterRepos(dirs)
 	if err != nil {
 		return nil, err
@@ -122,15 +126,19 @@ func (s *Sync) Run() (*RunSummary, error) {
 		s.Writer.PrintMsg("No target repositories.")
 		return &RunSummary{}, nil
 	}
-	s.Writer.PrintMsg(fmt.Sprintf("target repositories: (%d)", len(repos)))
 
 	perRepoTimeout, err := time.ParseDuration(s.TimeOut)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid timeout value: %s", s.TimeOut)
 	}
 
+	s.Writer.PrintHeader(s.Command, s.Options, len(repos))
+
+	runStart := time.Now()
 	stats := s.execute(context.Background(), repos, perRepoTimeout)
-	s.printSummary(stats)
+	elapsed := time.Since(runStart)
+
+	s.Writer.PrintSummaryTable(stats.outcomes, stats.printerSummary(), elapsed)
 	return stats.summary(), nil
 }
 
@@ -172,12 +180,10 @@ func (s *Sync) filterRepos(dirs []string) ([]string, error) {
 // execute runs the git command across all repos in parallel, throttled by
 // ConNum. Each invocation is bounded by perRepoTimeout via a derived context;
 // the parent context is *not* timed out so a slow repo never starves the
-// remaining ones.
+// remaining ones. Each goroutine builds a printer.Outcome, stores it in
+// runStats, and emits a single completed line via PrintRepoLine.
 func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout time.Duration) *runStats {
 	stats := &runStats{}
-	total := len(repos)
-	var done atomic.Int64
-	start := time.Now()
 
 	eg := &errgroup.Group{}
 	if s.ConNum > 0 {
@@ -187,63 +193,99 @@ func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout ti
 	for _, r := range repos {
 		r := r
 		eg.Go(func() error {
+			started := time.Now()
 			ctx, cancel := context.WithTimeout(parent, perRepoTimeout)
 			defer cancel()
 
-			err := s.execCmd(ctx, r)
-			switch {
-			case err == nil:
-				stats.addSuccess(r)
-				s.Writer.PrintMsg(fmt.Sprintf("Success: %s", r))
-			case errors.Is(ctx.Err(), context.DeadlineExceeded):
-				stats.addTimedOut(r)
-				s.Writer.PrintMsgErr(fmt.Sprintf("Timeout: %s", r))
-			default:
-				stats.addFailed(r)
-				s.Writer.PrintMsgErr(fmt.Sprintf("Failed: %s\n%v", r, err))
+			absPath, absErr := filepath.Abs(r)
+			if absErr != nil {
+				o := printer.Outcome{
+					Repo:     r,
+					Display:  displayName(r),
+					Status:   printer.StatusFailed,
+					Duration: time.Since(started),
+					Message:  absErr.Error(),
+					Err:      errors.Wrapf(absErr, "get.abs.failed: %s", r),
+				}
+				stats.addOutcome(o)
+				s.Writer.PrintRepoLine(o)
+				return nil
 			}
 
-			n := done.Add(1)
-			s.Writer.PrintMsg(fmt.Sprintf("Done: %d/%d", n, total))
+			msg, errMsg, err := s.Gitter.Git(ctx, s.Command, absPath, s.Options...)
+			o := printer.Outcome{
+				Repo:     absPath,
+				Display:  displayName(absPath),
+				Duration: time.Since(started),
+			}
+			switch {
+			case err == nil:
+				o.Status = printer.StatusSuccess
+				o.Message = firstLine(msg)
+			case errors.Is(ctx.Err(), context.DeadlineExceeded):
+				o.Status = printer.StatusTimeout
+				o.Message = "timeout"
+				o.Err = ctx.Err()
+			default:
+				o.Status = printer.StatusFailed
+				// Prefer the first line of git stderr when present; fall back
+				// to err.Error() so failures that happen before the child
+				// process can write to stderr (e.g. the repo was removed
+				// between discovery and execution, or cmd.Dir cannot be
+				// entered) still surface actionable text in the per-repo
+				// line and summary table.
+				if msg := firstLine(errMsg); msg != "" {
+					o.Message = msg
+				} else {
+					o.Message = err.Error()
+				}
+				o.Err = err
+			}
+			stats.addOutcome(o)
+			s.Writer.PrintRepoLine(o)
 			return nil
 		})
 	}
 	_ = eg.Wait()
 
-	s.Writer.PrintMsg(fmt.Sprintf("All done. (%v)", time.Since(start).Round(time.Millisecond)))
 	return stats
 }
 
-// execCmd is execute git command
-func (s *Sync) execCmd(ctx context.Context, d string) error {
-	absPath, err := filepath.Abs(d)
-	if err != nil {
-		return errors.Wrapf(err, "get.abs.failed: %s", d)
+// displayName shortens an absolute repository path to its trailing two
+// segments for compact display (e.g. ".../dxe-ai/agent" -> "dxe-ai/agent").
+// A bare leaf is returned untouched.
+func displayName(p string) string {
+	p = filepath.Clean(p)
+	parent, leaf := filepath.Split(p)
+	parent = strings.TrimRight(parent, string(filepath.Separator))
+	// Treat empty / "." / Unix root / Windows drive root (e.g. "C:") as
+	// "no meaningful parent" so a repo directly under such a root renders
+	// as the bare leaf instead of "C:/repo".
+	if parent == "" || parent == "." || parent == string(filepath.Separator) || isDriveRoot(parent) {
+		return leaf
 	}
-
-	msg, errMsg, err := s.Gitter.Git(ctx, s.Command, absPath, s.Options...)
-	if err != nil {
-		return errors.Wrapf(err, "%s", errMsg)
-	}
-	s.Writer.Print(printer.Result{Repo: absPath, Msg: msg})
-	return nil
+	return filepath.Base(parent) + "/" + leaf
 }
 
-// printSummary emits the post-run summary: counts, plus the list of failed
-// and timed-out repositories. Reuses printer.PrintRepoErr (previously unused).
-func (s *Sync) printSummary(stats *runStats) {
-	stats.mu.Lock()
-	defer stats.mu.Unlock()
-
-	s.Writer.PrintMsg(fmt.Sprintf(
-		"Summary: success=%d failed=%d timeout=%d",
-		len(stats.succeeded), len(stats.failed), len(stats.timedOut),
-	))
-
-	if len(stats.failed) > 0 {
-		s.Writer.PrintRepoErr("Failed repositories:", stats.failed)
+// isDriveRoot reports whether s looks like a Windows drive root such as
+// "C:" — i.e. a single ASCII letter followed by a colon and nothing else.
+// We intentionally don't gate on runtime.GOOS so the check stays a cheap
+// pure helper that's easy to test on any platform.
+func isDriveRoot(s string) bool {
+	if len(s) != 2 || s[1] != ':' {
+		return false
 	}
-	if len(stats.timedOut) > 0 {
-		s.Writer.PrintRepoErr("Timed out repositories:", stats.timedOut)
+	c := s[0]
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+}
+
+// firstLine returns the first non-empty trimmed line of s, or "" if none.
+func firstLine(s string) string {
+	for _, ln := range strings.Split(s, "\n") {
+		ln = strings.TrimSpace(ln)
+		if ln != "" {
+			return ln
+		}
 	}
+	return ""
 }

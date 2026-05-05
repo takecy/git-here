@@ -26,7 +26,7 @@ func newSyncWithFake(fn execFn, conNum int) *Sync {
 		Command: "status",
 		ConNum:  conNum,
 		Gitter:  &fakeExecutor{fn: fn},
-		Writer:  printer.NewPrinter(io.Discard, io.Discard),
+		Writer:  printer.NewPrinter(io.Discard),
 	}
 }
 
@@ -43,6 +43,7 @@ func TestSync_Execute(t *testing.T) {
 		is.Equal(len(stats.succeeded), 3)
 		is.Equal(len(stats.failed), 0)
 		is.Equal(len(stats.timedOut), 0)
+		is.Equal(len(stats.outcomes), 3)
 	})
 
 	t.Run("partial failure", func(t *testing.T) {
@@ -59,6 +60,7 @@ func TestSync_Execute(t *testing.T) {
 		stats := s.execute(context.Background(), []string{"a", "b", "c"}, time.Second)
 		is.Equal(len(stats.succeeded), 2)
 		is.Equal(len(stats.failed), 1)
+		is.Equal(len(stats.outcomes), 3)
 		is.Equal(filepath.Base(stats.failed[0]), "b")
 	})
 
@@ -75,6 +77,7 @@ func TestSync_Execute(t *testing.T) {
 		is.Equal(len(stats.timedOut), 1)
 		is.Equal(len(stats.failed), 0)
 		is.Equal(len(stats.succeeded), 0)
+		is.Equal(len(stats.outcomes), 1)
 	})
 
 	t.Run("respects ConNum throttle", func(t *testing.T) {
@@ -125,7 +128,9 @@ func TestSync_Execute(t *testing.T) {
 		is.Equal(len(stats.timedOut), 3)
 		is.Equal(len(stats.failed), 0)
 		is.Equal(len(stats.succeeded), 0)
+		is.Equal(len(stats.outcomes), 3)
 	})
+
 }
 
 func TestSync_FilterRepos(t *testing.T) {
@@ -220,4 +225,66 @@ func TestRunSummary_HasFailures(t *testing.T) {
 		s := &RunSummary{}
 		is.Equal(s.HasFailures(), false)
 	})
+}
+
+func TestDisplayName(t *testing.T) {
+	t.Run("two segments stripped to last two", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.Equal(displayName("/Users/x/go/src/github.com/dxe-ai/agent"), "dxe-ai/agent")
+	})
+
+	t.Run("single parent and leaf", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.Equal(displayName("/tmp/agent"), "tmp/agent")
+	})
+
+	t.Run("bare leaf returns leaf only", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		// On Unix, "/agent" cleans to "/agent"; parent becomes "/" → bare leaf.
+		is.Equal(displayName("/agent"), "agent")
+	})
+
+	t.Run("trailing slash is normalized", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.Equal(displayName("/a/b/c/"), "b/c")
+	})
+
+	t.Run("dot relative path returns just the leaf", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.Equal(displayName("./agent"), "agent")
+	})
+
+	t.Run("windows drive root parent returns just the leaf", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		// On non-Windows this exercises the helper directly; on Windows
+		// `filepath.Clean("C:\\repo")` produces a parent of "C:\" that
+		// trims to "C:" — which `isDriveRoot` recognises as no
+		// meaningful parent.
+		is.Equal(isDriveRoot("C:"), true)
+		is.Equal(isDriveRoot("z:"), true)
+		is.Equal(isDriveRoot("C:\\"), false)
+		is.Equal(isDriveRoot("CC"), false)
+		is.Equal(isDriveRoot("12"), false)
+	})
+}
+
+func TestSync_Execute_FailureFallsBackToErrText(t *testing.T) {
+	t.Parallel()
+	is := is.New(t)
+
+	// Simulate a Git invocation that fails before the child process can
+	// write anything to stderr — e.g. the repository directory is missing.
+	s := newSyncWithFake(func(_ context.Context, _, _ string, _ ...string) (string, string, error) {
+		return "", "", errors.New("chdir failed: no such file or directory")
+	}, 1)
+
+	stats := s.execute(context.Background(), []string{"a"}, time.Second)
+	is.Equal(len(stats.outcomes), 1)
+	is.Equal(stats.outcomes[0].Message, "chdir failed: no such file or directory")
 }

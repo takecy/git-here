@@ -2,11 +2,8 @@ package printer
 
 import (
 	"bytes"
-	"errors"
-	"io"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +14,7 @@ func TestPrinter_PrintMsg_ConcurrentSafe(t *testing.T) {
 	is := is.New(t)
 
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
+	p := NewPrinter(&buf)
 
 	const N = 200
 	var wg sync.WaitGroup
@@ -38,103 +35,13 @@ func TestPrinter_PrintMsg_ConcurrentSafe(t *testing.T) {
 	}
 }
 
-func TestPrinter_Print_ConcurrentSafe(t *testing.T) {
-	// successTmpl: "{{.Repo}}\n  {{.Msg}}\n" — 2 lines per call. If a lock is
-	// missing here, the two lines from one call can interleave with another
-	// call's lines, breaking the strict pair structure verified below.
+func TestPrinter_PrintRepoLine_ConcurrentSafe(t *testing.T) {
+	// Each PrintRepoLine call must produce exactly one line and not
+	// interleave with concurrent calls.
 	is := is.New(t)
 
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
-
-	const N = 200
-	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			p.Print(Result{Repo: "/path/repo", Msg: "ok"})
-		}()
-	}
-	wg.Wait()
-
-	lines := strings.Split(buf.String(), "\n")
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	is.Equal(len(lines), N*2)
-
-	for i := 0; i < len(lines); i += 2 {
-		is.True(strings.Contains(lines[i], "/path/repo"))
-		is.True(strings.HasPrefix(lines[i+1], "  "))
-		is.True(strings.Contains(lines[i+1], "ok"))
-	}
-}
-
-func TestPrinter_Error_ConcurrentSafe(t *testing.T) {
-	is := is.New(t)
-
-	var errBuf bytes.Buffer
-	p := NewPrinter(io.Discard, &errBuf)
-
-	const N = 100
-	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			p.Error(Result{Repo: "/path/r", Err: errors.New("boom")})
-		}()
-	}
-	wg.Wait()
-
-	lines := strings.Split(errBuf.String(), "\n")
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	is.Equal(len(lines), N*2)
-	for i := 0; i < len(lines); i += 2 {
-		is.True(strings.Contains(lines[i], "/path/r"))
-		is.True(strings.HasPrefix(lines[i+1], "  "))
-		is.True(strings.Contains(lines[i+1], "boom"))
-	}
-}
-
-// concurrencyProbe is a thin io.Writer that records the maximum number of
-// concurrent in-flight Write calls. Used to verify that a single mutex covers
-// BOTH writer and errWriter in Printer.
-type concurrencyProbe struct {
-	inflight atomic.Int32
-	peak     atomic.Int32
-}
-
-func (c *concurrencyProbe) Write(p []byte) (int, error) {
-	n := c.inflight.Add(1)
-	for {
-		cur := c.peak.Load()
-		if n <= cur {
-			break
-		}
-		if c.peak.CompareAndSwap(cur, n) {
-			break
-		}
-	}
-	// Tiny sleep widens the race window so that, if Print and Error were
-	// protected by separate mutexes, the probe would observe inflight >= 2.
-	time.Sleep(20 * time.Microsecond)
-	c.inflight.Add(-1)
-	return len(p), nil
-}
-
-func TestPrinter_SharedMutex_AcrossWriterAndErrWriter(t *testing.T) {
-	// Wires both writer and errWriter to the same probe. Print uses writer,
-	// Error uses errWriter. With a single mutex covering both, no two Writes
-	// can be in-flight at once → peak == 1. With separate mutexes, peak >= 2
-	// would be observed with high probability.
-	is := is.New(t)
-
-	probe := &concurrencyProbe{}
-	p := NewPrinter(probe, probe)
+	p := NewPrinter(&buf)
 
 	const N = 200
 	var wg sync.WaitGroup
@@ -142,47 +49,137 @@ func TestPrinter_SharedMutex_AcrossWriterAndErrWriter(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if i%2 == 0 {
-				p.Print(Result{Repo: "/r", Msg: "ok"})
-			} else {
-				p.Error(Result{Repo: "/r", Err: errors.New("boom")})
-			}
+			st := Status(i % 3)
+			p.PrintRepoLine(Outcome{
+				Repo:     "/path/repo",
+				Display:  "org/repo",
+				Status:   st,
+				Duration: 100 * time.Millisecond,
+				Message:  "msg",
+			})
 		}(i)
 	}
 	wg.Wait()
 
-	is.Equal(int(probe.peak.Load()), 1)
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+	is.Equal(len(lines), N)
+	for _, l := range lines {
+		is.True(strings.Contains(l, "org/repo"))
+		is.True(strings.Contains(l, "msg"))
+	}
+}
+
+func TestPrinter_PrintSummaryTable(t *testing.T) {
+	t.Parallel()
+	is := is.New(t)
+
+	var out bytes.Buffer
+	p := NewPrinter(&out)
+
+	outcomes := []Outcome{
+		{Display: "org/a", Status: StatusSuccess, Duration: 400 * time.Millisecond, Message: "Already up to date."},
+		{Display: "org/b", Status: StatusFailed, Duration: 200 * time.Millisecond, Message: "fatal: ..."},
+		{Display: "org/c", Status: StatusTimeout, Duration: 1 * time.Second, Message: "timeout"},
+	}
+	summary := Summary{Succeeded: 1, Failed: 1, TimedOut: 1}
+	p.PrintSummaryTable(outcomes, summary, 1500*time.Millisecond)
+
+	got := out.String()
+
+	is.True(strings.Contains(got, "==> Summary"))
+	is.True(strings.Contains(got, "Repository"))
+	is.True(strings.Contains(got, "Status"))
+	is.True(strings.Contains(got, "Duration"))
+	is.True(strings.Contains(got, "Message"))
+	is.True(strings.Contains(got, "org/a"))
+	is.True(strings.Contains(got, "org/b"))
+	is.True(strings.Contains(got, "org/c"))
+	is.True(strings.Contains(got, "+--"))
+	is.True(strings.Contains(got, "Total: 3"))
+	is.True(strings.Contains(got, "Success: 1"))
+	is.True(strings.Contains(got, "Failed: 1"))
+	is.True(strings.Contains(got, "Timeout: 1"))
+}
+
+func TestPrinter_PrintHeader(t *testing.T) {
+	t.Parallel()
+	is := is.New(t)
+
+	var out bytes.Buffer
+	p := NewPrinter(&out)
+
+	p.PrintHeader("pull", []string{"origin", "main"}, 8)
+
+	got := out.String()
+	is.True(strings.Contains(got, "==> Running"))
+	is.True(strings.Contains(got, "pull origin main"))
+	is.True(strings.Contains(got, "8 repositories"))
 }
 
 func TestPrinter_MixedPrints_ConcurrentSafe(t *testing.T) {
 	// Smoke test exercising every public Printer method concurrently. Catches
-	// any lock omission via the race detector even when message-shape tests
-	// don't apply (e.g. PrintCmd, PrintRepoErr).
+	// any lock omission via the race detector.
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
+	p := NewPrinter(&buf)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 200; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			switch i % 7 {
+			switch i % 4 {
 			case 0:
 				p.PrintMsg("m")
 			case 1:
-				p.PrintMsgErr("e")
+				p.PrintHeader("status", []string{"--short"}, 3)
 			case 2:
-				p.PrintRepoErr("re", []string{"a", "b"})
+				p.PrintRepoLine(Outcome{
+					Display: "org/r",
+					Status:  Status(i % 3),
+					Message: "ok",
+				})
 			case 3:
-				p.PrintCmd("status", []string{"--short"})
-			case 4:
-				p.Print(Result{Repo: "/path/r", Msg: "ok"})
-			case 5:
-				p.Error(Result{Repo: "/path/r", Err: errors.New("boom")})
-			case 6:
-				p.PrintMsg("another")
+				p.PrintSummaryTable(
+					[]Outcome{{Display: "org/r", Status: StatusSuccess}},
+					Summary{Succeeded: 1},
+					time.Second,
+				)
 			}
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestPrinter_NewPrinter_DefaultsToOsStdoutWhenNil(t *testing.T) {
+	t.Parallel()
+	is := is.New(t)
+
+	p := NewPrinter(nil)
+	is.True(p.writer != nil)
+}
+
+func TestRowColorFor(t *testing.T) {
+	t.Run("success has no color decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.True(rowColorFor(StatusSuccess) == nil)
+	})
+
+	t.Run("failed returns a non-nil decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		fn := rowColorFor(StatusFailed)
+		is.True(fn != nil)
+		// Decorator must wrap input non-empty (color codes added) without
+		// dropping the original payload.
+		is.True(strings.Contains(fn("X"), "X"))
+	})
+
+	t.Run("timeout returns a non-nil decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		fn := rowColorFor(StatusTimeout)
+		is.True(fn != nil)
+		is.True(strings.Contains(fn("X"), "X"))
+	})
 }
