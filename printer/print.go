@@ -1,77 +1,74 @@
 package printer
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"sync"
-	"text/template"
+	"time"
+	"unicode/utf8"
 
 	"github.com/fatih/color"
 )
 
-var helpers = template.FuncMap{
-	"magenta": color.MagentaString,
-	"yellow":  color.YellowString,
-	"green":   color.GreenString,
-	"black":   color.BlackString,
-	"white":   color.WhiteString,
-	"blue":    color.BlueString,
-	"cyan":    color.CyanString,
-	"red":     color.RedString,
+// Status classifies a per-repo result for table rendering and icon selection.
+type Status int
+
+const (
+	StatusSuccess Status = iota
+	StatusFailed
+	StatusTimeout
+)
+
+// Outcome carries every field needed to render both the streaming
+// "completed" line and the final summary table row for a single repository.
+type Outcome struct {
+	// Repo is the absolute path. Used for failure detail dump.
+	Repo string
+
+	// Display is the shortened display name (e.g. "dxe-ai/agent").
+	Display string
+
+	// Status classifies the outcome (success / failed / timeout).
+	Status Status
+
+	// Duration is the per-repo elapsed time.
+	Duration time.Duration
+
+	// Message is the first non-empty line of git stdout (success) or
+	// stderr (failure) — used in the streaming line and table cell.
+	Message string
+
+	// Stderr is the full git stderr text (failure or timeout) — used by
+	// PrintFailureDetails to dump diagnostic context to errWriter.
+	Stderr string
+
+	// Err is populated only when Status != StatusSuccess.
+	Err error
 }
 
-const successTmpl = `{{.Repo }}
-  {{.Msg }}
-`
+// Summary is a compact view of the per-status counts. Mirrors syncer.RunSummary
+// but is duplicated here to avoid an import cycle (syncer already imports
+// printer).
+type Summary struct {
+	Succeeded int
+	Failed    int
+	TimedOut  int
+}
 
-const errTmpl = `{{.Repo }}
-  {{.Msg | red}}
-`
-
-const cmdTmpl = `Git command is
-  {{.Cmd | green}} {{.Ops | green}}
-`
-
-const msgTmpl = `{{.Msg | green}}
-`
-
-const msgErrTmpl = `{{.Msg | red}}
-`
-
-const repoErrTmpl = `
-{{.Msg | red}}
-  {{ range .Repos }}- {{ . }}
-  {{ end }}`
-
-// Templates are parsed once at package init. text/template.Template.Execute is
-// safe for concurrent use, so the same parsed template can be shared across
-// goroutines without re-parsing on every call.
-var (
-	successTpl = template.Must(template.New("success").Funcs(helpers).Parse(successTmpl))
-	errTpl     = template.Must(template.New("err").Funcs(helpers).Parse(errTmpl))
-	cmdTpl     = template.Must(template.New("cmd").Funcs(helpers).Parse(cmdTmpl))
-	msgTpl     = template.Must(template.New("msg").Funcs(helpers).Parse(msgTmpl))
-	msgErrTpl  = template.Must(template.New("msgErr").Funcs(helpers).Parse(msgErrTmpl))
-	repoErrTpl = template.Must(template.New("repoErr").Funcs(helpers).Parse(repoErrTmpl))
-)
+// Total reports the aggregate count.
+func (s Summary) Total() int { return s.Succeeded + s.Failed + s.TimedOut }
 
 // Printer is struct
 type Printer struct {
-	// mu serialises template.Execute calls so that the multiple Write calls
-	// emitted per Execute don't interleave across goroutines, even when
-	// writer and errWriter end up at the same TTY.
+	// mu serialises every public method's writes so that the multiple Write
+	// calls per render don't interleave across goroutines, even when writer
+	// and errWriter end up at the same TTY.
 	mu        sync.Mutex
 	writer    io.Writer
 	errWriter io.Writer
-}
-
-// Result is output
-type Result struct {
-	Repo string
-	Msg  string
-	Err  error
 }
 
 // NewPrinter is constructor
@@ -89,73 +86,242 @@ func NewPrinter(writer, errWriter io.Writer) *Printer {
 	}
 }
 
-// PrintCmd prints command detail
-func (p *Printer) PrintCmd(cmd string, options []string) {
-	type cmds struct {
-		Cmd string
-		Ops string
-	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if err := cmdTpl.Execute(p.writer, cmds{Cmd: cmd, Ops: strings.Join(options, " ")}); err != nil {
-		log.Println(err)
-	}
-}
-
 // PrintMsg prints message
 func (p *Printer) PrintMsg(msg string) {
-	type message struct {
-		Msg string
-	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := msgTpl.Execute(p.writer, message{Msg: msg}); err != nil {
+	if _, err := fmt.Fprintln(p.writer, color.GreenString(msg)); err != nil {
 		log.Println(err)
 	}
 }
 
-// PrintMsgErr prints an error message to errWriter so that callers can
-// redirect stderr separately from stdout (consistent with Printer.Error).
-func (p *Printer) PrintMsgErr(msg string) {
-	type message struct {
-		Msg string
-	}
+// PrintHeader emits the run-start banner: "==> Running <cmd> <opts> on N
+// repositories".
+func (p *Printer) PrintHeader(cmd string, options []string, total int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := msgErrTpl.Execute(p.errWriter, message{Msg: msg}); err != nil {
+
+	parts := []string{cmd}
+	parts = append(parts, options...)
+	cmdLine := strings.Join(parts, " ")
+
+	header := fmt.Sprintf("==> Running %s on %d repositories", cmdLine, total)
+	if _, err := fmt.Fprintln(p.writer, color.GreenString(header)); err != nil {
 		log.Println(err)
 	}
 }
 
-// PrintRepoErr prints a header plus a list of repository paths to errWriter
-// (matching the stderr semantics of PrintMsgErr / Error).
-func (p *Printer) PrintRepoErr(msg string, repos []string) {
-	type message struct {
-		Msg   string
-		Repos []string
-	}
+// PrintRepoLine emits a single line summarising one repository's outcome.
+// Format: "<icon> <Display>  <Message>  <duration>".
+func (p *Printer) PrintRepoLine(o Outcome) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := repoErrTpl.Execute(p.errWriter, message{Msg: msg, Repos: repos}); err != nil {
+
+	line := fmt.Sprintf("%s %-30s %-40s %s",
+		statusIconColored(o.Status),
+		o.Display,
+		truncate(o.Message, 40),
+		formatDuration(o.Duration),
+	)
+	if _, err := fmt.Fprintln(p.writer, line); err != nil {
 		log.Println(err)
 	}
 }
 
-// Print prints result
-func (p *Printer) Print(res Result) {
+// PrintSummaryTable renders a "==> Summary" heading, the bordered 4-column
+// table (Repository / Status / Duration / Message), and a totals line
+// including elapsed wall-clock time.
+func (p *Printer) PrintSummaryTable(outcomes []Outcome, summary Summary, elapsed time.Duration) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := successTpl.Execute(p.writer, res); err != nil {
+
+	if _, err := fmt.Fprintln(p.writer, color.GreenString("==> Summary")); err != nil {
+		log.Println(err)
+	}
+
+	header := []string{"Repository", "Status", "Duration", "Message"}
+	rows := make([][]string, 0, len(outcomes))
+	for _, o := range outcomes {
+		rows = append(rows, []string{
+			o.Display,
+			statusIcon(o.Status),
+			formatDuration(o.Duration),
+			truncate(o.Message, 60),
+		})
+	}
+	renderTable(p.writer, header, rows)
+
+	totals := fmt.Sprintf("Total: %d  Success: %d  Failed: %d  Timeout: %d  Elapsed: %s",
+		summary.Total(),
+		summary.Succeeded,
+		summary.Failed,
+		summary.TimedOut,
+		formatDuration(elapsed),
+	)
+	if _, err := fmt.Fprintln(p.writer, totals); err != nil {
 		log.Println(err)
 	}
 }
 
-// Error prints error
-func (p *Printer) Error(res Result) {
-	res.Msg = res.Err.Error()
+// PrintFailureDetails dumps absolute path, full git stderr, and the wrapped
+// error text for every non-success outcome to errWriter. A blank line
+// separates each entry. Called after PrintSummaryTable so the dashboard on
+// stdout stays clean while diagnostic detail goes to stderr.
+func (p *Printer) PrintFailureDetails(outcomes []Outcome) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if err := errTpl.Execute(p.errWriter, res); err != nil {
+
+	first := true
+	for _, o := range outcomes {
+		if o.Status == StatusSuccess {
+			continue
+		}
+		if !first {
+			writeLine(p.errWriter, "")
+		}
+		first = false
+
+		label := "Failed"
+		if o.Status == StatusTimeout {
+			label = "Timeout"
+		}
+		writeLine(p.errWriter, color.RedString("==> %s: %s", label, o.Repo))
+		if o.Stderr != "" {
+			writeLine(p.errWriter, strings.TrimRight(o.Stderr, "\n"))
+		}
+		if o.Err != nil {
+			writeLine(p.errWriter, color.RedString(o.Err.Error()))
+		}
+	}
+}
+
+// writeLine is a small helper that funnels Fprintln errors through log so the
+// errcheck linter is satisfied while preserving the same write semantics
+// every other Printer method uses.
+func writeLine(w io.Writer, s string) {
+	if _, err := fmt.Fprintln(w, s); err != nil {
 		log.Println(err)
 	}
+}
+
+// statusIcon returns a plain (uncolored) status glyph used inside table cells
+// where ANSI codes would interfere with width calculation.
+func statusIcon(s Status) string {
+	switch s {
+	case StatusSuccess:
+		return "✓"
+	case StatusFailed:
+		return "✗"
+	case StatusTimeout:
+		return "⏱"
+	}
+	return "?"
+}
+
+// statusIconColored returns the colored variant for use in streaming repo
+// lines (outside the table).
+func statusIconColored(s Status) string {
+	switch s {
+	case StatusSuccess:
+		return color.GreenString("✓")
+	case StatusFailed:
+		return color.RedString("✗")
+	case StatusTimeout:
+		return color.YellowString("⏱")
+	}
+	return "?"
+}
+
+// formatDuration renders a duration in a compact, fixed style: "0.4s", "12s",
+// "1m23s". Avoids the noisy "1.234567ms" shape from Duration.String.
+func formatDuration(d time.Duration) string {
+	if d <= 0 {
+		return "0s"
+	}
+	if d < time.Second {
+		ms := float64(d) / float64(time.Millisecond)
+		return fmt.Sprintf("%.0fms", ms)
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", float64(d)/float64(time.Second))
+	}
+	return d.Round(time.Second).String()
+}
+
+// truncate caps s to maxRunes runes (visual cells, approximately) by replacing
+// the tail with an ellipsis so the table stays aligned even for long messages.
+func truncate(s string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	if maxRunes <= 1 {
+		return "…"
+	}
+	runes := []rune(s)
+	return string(runes[:maxRunes-1]) + "…"
+}
+
+// renderTable draws a +----+ bordered table using rune-count widths for
+// alignment. Treats every rune as a single visual cell; that is correct for
+// the ASCII-heavy data we render plus the three single-width status glyphs.
+func renderTable(w io.Writer, header []string, rows [][]string) {
+	if len(header) == 0 {
+		return
+	}
+	widths := make([]int, len(header))
+	for i, h := range header {
+		widths[i] = utf8.RuneCountInString(h)
+	}
+	for _, row := range rows {
+		for i, cell := range row {
+			if i >= len(widths) {
+				continue
+			}
+			if cw := utf8.RuneCountInString(cell); cw > widths[i] {
+				widths[i] = cw
+			}
+		}
+	}
+
+	border := buildBorder(widths)
+	writeLine(w, border)
+	writeLine(w, buildRow(header, widths))
+	writeLine(w, border)
+	for _, row := range rows {
+		writeLine(w, buildRow(row, widths))
+	}
+	writeLine(w, border)
+}
+
+func buildBorder(widths []int) string {
+	var b strings.Builder
+	b.WriteByte('+')
+	for _, w := range widths {
+		b.WriteString(strings.Repeat("-", w+2))
+		b.WriteByte('+')
+	}
+	return b.String()
+}
+
+func buildRow(cells []string, widths []int) string {
+	var b strings.Builder
+	b.WriteByte('|')
+	for i, w := range widths {
+		cell := ""
+		if i < len(cells) {
+			cell = cells[i]
+		}
+		b.WriteByte(' ')
+		b.WriteString(cell)
+		pad := w - utf8.RuneCountInString(cell)
+		if pad > 0 {
+			b.WriteString(strings.Repeat(" ", pad))
+		}
+		b.WriteByte(' ')
+		b.WriteByte('|')
+	}
+	return b.String()
 }
