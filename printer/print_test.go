@@ -2,11 +2,8 @@ package printer
 
 import (
 	"bytes"
-	"errors"
-	"io"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +14,7 @@ func TestPrinter_PrintMsg_ConcurrentSafe(t *testing.T) {
 	is := is.New(t)
 
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
+	p := NewPrinter(&buf)
 
 	const N = 200
 	var wg sync.WaitGroup
@@ -44,7 +41,7 @@ func TestPrinter_PrintRepoLine_ConcurrentSafe(t *testing.T) {
 	is := is.New(t)
 
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
+	p := NewPrinter(&buf)
 
 	const N = 200
 	var wg sync.WaitGroup
@@ -76,8 +73,8 @@ func TestPrinter_PrintSummaryTable(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	var out, errBuf bytes.Buffer
-	p := NewPrinter(&out, &errBuf)
+	var out bytes.Buffer
+	p := NewPrinter(&out)
 
 	outcomes := []Outcome{
 		{Display: "org/a", Status: StatusSuccess, Duration: 400 * time.Millisecond, Message: "Already up to date."},
@@ -102,45 +99,14 @@ func TestPrinter_PrintSummaryTable(t *testing.T) {
 	is.True(strings.Contains(got, "Success: 1"))
 	is.True(strings.Contains(got, "Failed: 1"))
 	is.True(strings.Contains(got, "Timeout: 1"))
-
-	is.Equal(errBuf.Len(), 0)
-}
-
-func TestPrinter_PrintFailureDetails_HasFullStderr(t *testing.T) {
-	t.Parallel()
-	is := is.New(t)
-
-	var out, errBuf bytes.Buffer
-	p := NewPrinter(&out, &errBuf)
-
-	outcomes := []Outcome{
-		{Repo: "/abs/org/ok", Display: "org/ok", Status: StatusSuccess},
-		{
-			Repo:    "/abs/org/bad",
-			Display: "org/bad",
-			Status:  StatusFailed,
-			Stderr:  "fatal: not a git repository\nadditional context\n",
-			Err:     errors.New("exit status 128"),
-		},
-	}
-	p.PrintFailureDetails(outcomes)
-
-	got := errBuf.String()
-	is.True(strings.Contains(got, "/abs/org/bad"))
-	is.True(strings.Contains(got, "fatal: not a git repository"))
-	is.True(strings.Contains(got, "additional context"))
-	is.True(strings.Contains(got, "exit status 128"))
-	is.True(!strings.Contains(got, "/abs/org/ok"))
-
-	is.Equal(out.Len(), 0)
 }
 
 func TestPrinter_PrintHeader(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	var out, errBuf bytes.Buffer
-	p := NewPrinter(&out, &errBuf)
+	var out bytes.Buffer
+	p := NewPrinter(&out)
 
 	p.PrintHeader("pull", []string{"origin", "main"}, 8)
 
@@ -148,85 +114,20 @@ func TestPrinter_PrintHeader(t *testing.T) {
 	is.True(strings.Contains(got, "==> Running"))
 	is.True(strings.Contains(got, "pull origin main"))
 	is.True(strings.Contains(got, "8 repositories"))
-	is.Equal(errBuf.Len(), 0)
-}
-
-// concurrencyProbe is a thin io.Writer that records the maximum number of
-// concurrent in-flight Write calls. Used to verify that a single mutex covers
-// BOTH writer and errWriter in Printer.
-type concurrencyProbe struct {
-	inflight atomic.Int32
-	peak     atomic.Int32
-}
-
-func (c *concurrencyProbe) Write(p []byte) (int, error) {
-	n := c.inflight.Add(1)
-	for {
-		cur := c.peak.Load()
-		if n <= cur {
-			break
-		}
-		if c.peak.CompareAndSwap(cur, n) {
-			break
-		}
-	}
-	// Tiny sleep widens the race window so that, if PrintRepoLine and
-	// PrintFailureDetails were protected by separate mutexes, the probe
-	// would observe inflight >= 2.
-	time.Sleep(20 * time.Microsecond)
-	c.inflight.Add(-1)
-	return len(p), nil
-}
-
-func TestPrinter_SharedMutex_AcrossWriterAndErrWriter(t *testing.T) {
-	// Wires both writer and errWriter to the same probe. PrintRepoLine uses
-	// writer, PrintFailureDetails uses errWriter. With a single mutex
-	// covering both, no two Writes can be in-flight at once → peak == 1.
-	is := is.New(t)
-
-	probe := &concurrencyProbe{}
-	p := NewPrinter(probe, probe)
-
-	const N = 200
-	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			if i%2 == 0 {
-				p.PrintRepoLine(Outcome{
-					Display: "org/r",
-					Status:  StatusSuccess,
-					Message: "ok",
-				})
-			} else {
-				p.PrintFailureDetails([]Outcome{{
-					Repo:    "/abs/org/r",
-					Display: "org/r",
-					Status:  StatusFailed,
-					Stderr:  "boom",
-					Err:     errors.New("boom"),
-				}})
-			}
-		}(i)
-	}
-	wg.Wait()
-
-	is.Equal(int(probe.peak.Load()), 1)
 }
 
 func TestPrinter_MixedPrints_ConcurrentSafe(t *testing.T) {
 	// Smoke test exercising every public Printer method concurrently. Catches
 	// any lock omission via the race detector.
 	var buf bytes.Buffer
-	p := NewPrinter(&buf, &buf)
+	p := NewPrinter(&buf)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 200; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			switch i % 5 {
+			switch i % 4 {
 			case 0:
 				p.PrintMsg("m")
 			case 1:
@@ -243,14 +144,6 @@ func TestPrinter_MixedPrints_ConcurrentSafe(t *testing.T) {
 					Summary{Succeeded: 1},
 					time.Second,
 				)
-			case 4:
-				p.PrintFailureDetails([]Outcome{{
-					Repo:    "/abs/org/r",
-					Display: "org/r",
-					Status:  StatusFailed,
-					Stderr:  "boom",
-					Err:     errors.New("boom"),
-				}})
 			}
 		}(i)
 	}
@@ -261,7 +154,6 @@ func TestPrinter_NewPrinter_DefaultsToOsStdoutWhenNil(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
 
-	p := NewPrinter(nil, io.Discard)
+	p := NewPrinter(nil)
 	is.True(p.writer != nil)
-	is.True(p.errWriter != nil)
 }

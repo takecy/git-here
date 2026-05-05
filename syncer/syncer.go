@@ -139,7 +139,6 @@ func (s *Sync) Run() (*RunSummary, error) {
 	elapsed := time.Since(runStart)
 
 	s.Writer.PrintSummaryTable(stats.outcomes, stats.printerSummary(), elapsed)
-	s.Writer.PrintFailureDetails(stats.outcomes)
 	return stats.summary(), nil
 }
 
@@ -226,12 +225,10 @@ func (s *Sync) execute(parent context.Context, repos []string, perRepoTimeout ti
 			case errors.Is(ctx.Err(), context.DeadlineExceeded):
 				o.Status = printer.StatusTimeout
 				o.Message = "timeout"
-				o.Stderr = errMsg
 				o.Err = ctx.Err()
 			default:
 				o.Status = printer.StatusFailed
 				o.Message = firstLine(errMsg)
-				o.Stderr = errMsg
 				o.Err = err
 			}
 			stats.addOutcome(o)

@@ -66,7 +66,6 @@ func main() {
 	fmt.Printf("args: targetDir: %s ignoreDir: %s concurrency: %d timeout: %v\n", *targetDir, *ignoreDir, *conNum, *timeout)
 
 	writer := os.Stdout
-	errWriter := os.Stderr
 
 	summary, err := (&syncer.Sync{
 		TargetDir: *targetDir,
@@ -75,8 +74,8 @@ func main() {
 		Command:   flag.Arg(0),
 		Options:   flag.Args()[1:],
 		ConNum:    *conNum,
-		Gitter:    syncer.NewGitter(writer, errWriter),
-		Writer:    printer.NewPrinter(writer, errWriter),
+		Gitter:    syncer.NewGitter(writer, os.Stderr),
+		Writer:    printer.NewPrinter(writer),
 	}).Run()
 
 	// Map run outcome to exit codes per README spec:

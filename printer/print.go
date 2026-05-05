@@ -41,10 +41,6 @@ type Outcome struct {
 	// stderr (failure) — used in the streaming line and table cell.
 	Message string
 
-	// Stderr is the full git stderr text (failure or timeout) — used by
-	// PrintFailureDetails to dump diagnostic context to errWriter.
-	Stderr string
-
 	// Err is populated only when Status != StatusSuccess.
 	Err error
 }
@@ -64,25 +60,19 @@ func (s Summary) Total() int { return s.Succeeded + s.Failed + s.TimedOut }
 // Printer is struct
 type Printer struct {
 	// mu serialises every public method's writes so that the multiple Write
-	// calls per render don't interleave across goroutines, even when writer
-	// and errWriter end up at the same TTY.
-	mu        sync.Mutex
-	writer    io.Writer
-	errWriter io.Writer
+	// calls per render don't interleave across goroutines.
+	mu     sync.Mutex
+	writer io.Writer
 }
 
 // NewPrinter is constructor
-func NewPrinter(writer, errWriter io.Writer) *Printer {
+func NewPrinter(writer io.Writer) *Printer {
 	if writer == nil {
 		writer = os.Stdout
 	}
-	if errWriter == nil {
-		errWriter = os.Stderr
-	}
 
 	return &Printer{
-		writer:    writer,
-		errWriter: errWriter,
+		writer: writer,
 	}
 }
 
@@ -160,38 +150,6 @@ func (p *Printer) PrintSummaryTable(outcomes []Outcome, summary Summary, elapsed
 	)
 	if _, err := fmt.Fprintln(p.writer, totals); err != nil {
 		log.Println(err)
-	}
-}
-
-// PrintFailureDetails dumps absolute path, full git stderr, and the wrapped
-// error text for every non-success outcome to errWriter. A blank line
-// separates each entry. Called after PrintSummaryTable so the dashboard on
-// stdout stays clean while diagnostic detail goes to stderr.
-func (p *Printer) PrintFailureDetails(outcomes []Outcome) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	first := true
-	for _, o := range outcomes {
-		if o.Status == StatusSuccess {
-			continue
-		}
-		if !first {
-			writeLine(p.errWriter, "")
-		}
-		first = false
-
-		label := "Failed"
-		if o.Status == StatusTimeout {
-			label = "Timeout"
-		}
-		writeLine(p.errWriter, color.RedString("==> %s: %s", label, o.Repo))
-		if o.Stderr != "" {
-			writeLine(p.errWriter, strings.TrimRight(o.Stderr, "\n"))
-		}
-		if o.Err != nil {
-			writeLine(p.errWriter, color.RedString(o.Err.Error()))
-		}
 	}
 }
 

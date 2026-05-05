@@ -26,7 +26,7 @@ func newSyncWithFake(fn execFn, conNum int) *Sync {
 		Command: "status",
 		ConNum:  conNum,
 		Gitter:  &fakeExecutor{fn: fn},
-		Writer:  printer.NewPrinter(io.Discard, io.Discard),
+		Writer:  printer.NewPrinter(io.Discard),
 	}
 }
 
@@ -131,21 +131,6 @@ func TestSync_Execute(t *testing.T) {
 		is.Equal(len(stats.outcomes), 3)
 	})
 
-	t.Run("failure preserves full stderr in Outcome.Stderr", func(t *testing.T) {
-		t.Parallel()
-		is := is.New(t)
-
-		stderrBody := "fatal: not a git repository\nadditional context\n"
-		s := newSyncWithFake(func(_ context.Context, _, _ string, _ ...string) (string, string, error) {
-			return "", stderrBody, errors.New("exit status 128")
-		}, 1)
-
-		stats := s.execute(context.Background(), []string{"a"}, time.Second)
-		is.Equal(len(stats.outcomes), 1)
-		is.Equal(stats.outcomes[0].Status, printer.StatusFailed)
-		is.Equal(stats.outcomes[0].Stderr, stderrBody)
-		is.True(stats.outcomes[0].Err != nil)
-	})
 }
 
 func TestSync_FilterRepos(t *testing.T) {
