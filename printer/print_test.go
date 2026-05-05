@@ -157,3 +157,29 @@ func TestPrinter_NewPrinter_DefaultsToOsStdoutWhenNil(t *testing.T) {
 	p := NewPrinter(nil)
 	is.True(p.writer != nil)
 }
+
+func TestRowColorFor(t *testing.T) {
+	t.Run("success has no color decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		is.True(rowColorFor(StatusSuccess) == nil)
+	})
+
+	t.Run("failed returns a non-nil decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		fn := rowColorFor(StatusFailed)
+		is.True(fn != nil)
+		// Decorator must wrap input non-empty (color codes added) without
+		// dropping the original payload.
+		is.True(strings.Contains(fn("X"), "X"))
+	})
+
+	t.Run("timeout returns a non-nil decorator", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+		fn := rowColorFor(StatusTimeout)
+		is.True(fn != nil)
+		is.True(strings.Contains(fn("X"), "X"))
+	})
+}

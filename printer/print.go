@@ -131,6 +131,7 @@ func (p *Printer) PrintSummaryTable(outcomes []Outcome, summary Summary, elapsed
 
 	header := []string{"Repository", "Status", "Duration", "Message"}
 	rows := make([][]string, 0, len(outcomes))
+	rowColors := make([]func(string) string, 0, len(outcomes))
 	for _, o := range outcomes {
 		rows = append(rows, []string{
 			o.Display,
@@ -138,8 +139,9 @@ func (p *Printer) PrintSummaryTable(outcomes []Outcome, summary Summary, elapsed
 			formatDuration(o.Duration),
 			truncate(o.Message, 60),
 		})
+		rowColors = append(rowColors, rowColorFor(o.Status))
 	}
-	renderTable(p.writer, header, rows)
+	renderTable(p.writer, header, rows, rowColors)
 
 	totals := fmt.Sprintf("Total: %d  Success: %d  Failed: %d  Timeout: %d  Elapsed: %s",
 		summary.Total(),
@@ -174,6 +176,20 @@ func statusIcon(s Status) string {
 		return "⏱"
 	}
 	return "?"
+}
+
+// rowColorFor returns a function that wraps a fully-built table row in the
+// ANSI color appropriate for the given Status, or nil to leave the row
+// uncolored. Coloring is applied AFTER width calculation and padding so the
+// table stays aligned even when the rendered cell contains no escape codes.
+func rowColorFor(s Status) func(string) string {
+	switch s {
+	case StatusFailed:
+		return func(s string) string { return color.New(color.FgRed).Sprint(s) }
+	case StatusTimeout:
+		return func(s string) string { return color.New(color.FgYellow).Sprint(s) }
+	}
+	return nil
 }
 
 // statusIconColored returns the colored variant for use in streaming repo
@@ -225,7 +241,11 @@ func truncate(s string, maxRunes int) string {
 // renderTable draws a +----+ bordered table using rune-count widths for
 // alignment. Treats every rune as a single visual cell; that is correct for
 // the ASCII-heavy data we render plus the three single-width status glyphs.
-func renderTable(w io.Writer, header []string, rows [][]string) {
+//
+// rowColors, when non-nil and the matching index is non-nil, is applied to a
+// fully-built row line (including borders) AFTER width calculation. Pass nil
+// for the entire slice or nil for individual entries to leave rows uncolored.
+func renderTable(w io.Writer, header []string, rows [][]string, rowColors []func(string) string) {
 	if len(header) == 0 {
 		return
 	}
@@ -248,8 +268,12 @@ func renderTable(w io.Writer, header []string, rows [][]string) {
 	writeLine(w, border)
 	writeLine(w, buildRow(header, widths))
 	writeLine(w, border)
-	for _, row := range rows {
-		writeLine(w, buildRow(row, widths))
+	for i, row := range rows {
+		line := buildRow(row, widths)
+		if i < len(rowColors) && rowColors[i] != nil {
+			line = rowColors[i](line)
+		}
+		writeLine(w, line)
 	}
 	writeLine(w, border)
 }
