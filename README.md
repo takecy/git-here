@@ -277,7 +277,7 @@ Any valid git command can be used:
 
 ### Prerequisites
 
-- Go 1.26 or later
+- Go 1.27 or later
 
 ### Setup
 
