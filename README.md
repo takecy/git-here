@@ -315,8 +315,8 @@ make build
 make test
 make lint
 
-# Test manually with debug output
-DEBUG=* go run gih/main.go status
+# Run without building
+go run ./gih status
 
 # Test with the development binary
 ./gih_dev status
@@ -347,11 +347,11 @@ We welcome contributions! Here's how to get started:
 ### Pull Requests
 
 1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+2. **Create** a branch prefixed with the change type (`feat/`, `fix/`, `docs/`, ...): `git checkout -b feat/amazing-feature`
 3. **Make** your changes with tests
-4. **Run** the full test suite: `make test lint`
-5. **Commit** your changes: `git commit -m 'Add amazing feature'`
-6. **Push** to your branch: `git push origin feature/amazing-feature`
+4. **Run** the full check: `make build && make test && make lint`
+5. **Commit** your changes using [Conventional Commits](https://www.conventionalcommits.org/): `git commit -m 'feat(syncer): add amazing feature'`
+6. **Push** to your branch: `git push origin feat/amazing-feature`
 7. **Open** a Pull Request
 
 ### Code Style
