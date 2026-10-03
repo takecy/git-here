@@ -29,19 +29,20 @@ I created it because I was tired of managing dozens of microservice repositories
 prints a bordered summary table with totals at the end:
 
 ```
-==> Running pull origin master on 3 repositories
-✓ takecy/git-here                Already up to date.                      0.4s
-✗ takecy/adk-test                fatal: couldn't find remote ref master   1.2s
-✓ takecy/another-repo            Already up to date.                      0.5s
+$ gih pull
+==> Running pull on 3 repositories
+✓ workspace/api-server           Already up to date.                      0.4s
+✓ workspace/docs                 Updating a17b0e2..c52d9f4                0.7s
+✓ workspace/web-frontend         Updating 3f9c2a1..8d4e7b6                1.1s
 ==> Summary
-+-------------------------+--------+----------+----------------------------------------+
-| Repository              | Status | Duration | Message                                |
-+-------------------------+--------+----------+----------------------------------------+
-| takecy/git-here         | ✓      | 0.4s     | Already up to date.                    |
-| takecy/adk-test         | ✗      | 1.2s     | fatal: couldn't find remote ref master |
-| takecy/another-repo     | ✓      | 0.5s     | Already up to date.                    |
-+-------------------------+--------+----------+----------------------------------------+
-Total: 3  Success: 2  Failed: 1  Timeout: 0  Elapsed: 1.2s
++------------------------+--------+----------+---------------------------+
+| Repository             | Status | Duration | Message                   |
++------------------------+--------+----------+---------------------------+
+| workspace/api-server   | ✓      | 0.4s     | Already up to date.       |
+| workspace/docs         | ✓      | 0.7s     | Updating a17b0e2..c52d9f4 |
+| workspace/web-frontend | ✓      | 1.1s     | Updating 3f9c2a1..8d4e7b6 |
++------------------------+--------+----------+---------------------------+
+Total: 3  Success: 3  Failed: 0  Timeout: 0  Elapsed: 1.1s
 ```
 
 Failed rows are colored red and timed-out rows yellow when the output
